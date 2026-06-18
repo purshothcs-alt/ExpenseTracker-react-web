@@ -1,0 +1,333 @@
+import dayjs from 'dayjs';
+import type {
+  AccountType, Account, TransactionType, Category, Tag, Transaction,
+  GoalType, Goal, LoanType, AssetType, Asset, BudgetType, Budget,
+  DashboardWidget, ReportTemplate, IncomeType, RecurringTransaction,
+} from '../types';
+
+const now = () => new Date().toISOString();
+const daysAgo = (d: number) => dayjs().subtract(d, 'day').toISOString().split('T')[0];
+const monthsAgo = (m: number, day = 1) => dayjs().subtract(m, 'month').date(day).format('YYYY-MM-DD');
+
+export const seedAccountTypes: Omit<AccountType, 'id'>[] = [
+  { name: 'Cash', description: 'Physical cash', icon: 'payments', color: '#4CAF50', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Wallet', description: 'Digital wallet', icon: 'account_balance_wallet', color: '#2196F3', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Savings Account', description: 'Bank savings account', icon: 'savings', color: '#9C27B0', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Current Account', description: 'Bank current/checking account', icon: 'account_balance', color: '#FF9800', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Credit Card', description: 'Credit card account', icon: 'credit_card', color: '#F44336', displayOrder: 5, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'UPI', description: 'Unified Payment Interface', icon: 'smartphone', color: '#00BCD4', displayOrder: 6, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Business Account', description: 'Business bank account', icon: 'business', color: '#795548', displayOrder: 7, isActive: true, createdAt: now(), updatedAt: now() },
+];
+
+export const seedTransactionTypes: Omit<TransactionType, 'id'>[] = [
+  { name: 'Income', description: 'Money received', icon: 'trending_up', color: '#4CAF50', direction: 'credit', isActive: true, displayOrder: 1, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Expense', description: 'Money spent', icon: 'trending_down', color: '#F44336', direction: 'debit', isActive: true, displayOrder: 2, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Transfer', description: 'Move money between accounts', icon: 'swap_horiz', color: '#2196F3', direction: 'transfer', isActive: true, displayOrder: 3, requiresToAccount: true, createdAt: now(), updatedAt: now() },
+  { name: 'Investment', description: 'Money put into investments', icon: 'show_chart', color: '#9C27B0', direction: 'debit', isActive: true, displayOrder: 4, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Loan Given', description: 'Money lent to others', icon: 'arrow_outward', color: '#FF9800', direction: 'debit', isActive: true, displayOrder: 5, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Loan Taken', description: 'Money borrowed', icon: 'arrow_inward', color: '#795548', direction: 'credit', isActive: true, displayOrder: 6, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Adjustment', description: 'Balance adjustment', icon: 'tune', color: '#607D8B', direction: 'credit', isActive: true, displayOrder: 7, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+  { name: 'Refund', description: 'Money returned', icon: 'undo', color: '#00BCD4', direction: 'credit', isActive: true, displayOrder: 8, requiresToAccount: false, createdAt: now(), updatedAt: now() },
+];
+
+export const seedCategories: Omit<Category, 'id'>[] = [
+  { name: 'Food & Dining', icon: 'restaurant', color: '#FF5722', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Groceries', icon: 'shopping_basket', color: '#4CAF50', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Fuel & Vehicle', icon: 'local_gas_station', color: '#FF9800', categoryType: 'expense', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Medical', icon: 'medical_services', color: '#F44336', categoryType: 'expense', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Education', icon: 'school', color: '#3F51B5', categoryType: 'expense', displayOrder: 5, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Shopping', icon: 'shopping_bag', color: '#E91E63', categoryType: 'expense', displayOrder: 6, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Entertainment', icon: 'movie', color: '#9C27B0', categoryType: 'expense', displayOrder: 7, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Travel', icon: 'flight', color: '#00BCD4', categoryType: 'expense', displayOrder: 8, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Utilities', icon: 'electrical_services', color: '#607D8B', categoryType: 'expense', displayOrder: 9, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'House Rent', icon: 'home', color: '#795548', categoryType: 'expense', displayOrder: 10, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'EMI', icon: 'payments', color: '#FF5722', categoryType: 'expense', displayOrder: 11, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Insurance', icon: 'security', color: '#009688', categoryType: 'expense', displayOrder: 12, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Kids', icon: 'child_care', color: '#FF80AB', categoryType: 'expense', displayOrder: 13, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Family', icon: 'family_restroom', color: '#FFAB40', categoryType: 'expense', displayOrder: 14, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Personal Care', icon: 'spa', color: '#CE93D8', categoryType: 'expense', displayOrder: 15, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Subscriptions', icon: 'subscriptions', color: '#80CBC4', categoryType: 'expense', displayOrder: 16, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Taxes', icon: 'receipt_long', color: '#546E7A', categoryType: 'expense', displayOrder: 17, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Maintenance', icon: 'build', color: '#8D6E63', categoryType: 'expense', displayOrder: 18, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Salary', icon: 'work', color: '#4CAF50', categoryType: 'income', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Bonus', icon: 'emoji_events', color: '#FFC107', categoryType: 'income', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Freelancing', icon: 'laptop', color: '#2196F3', categoryType: 'income', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Rental Income', icon: 'apartment', color: '#9C27B0', categoryType: 'income', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Business Income', icon: 'store', color: '#FF9800', categoryType: 'income', displayOrder: 5, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Interest', icon: 'account_balance', color: '#009688', categoryType: 'income', displayOrder: 6, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Dividend', icon: 'show_chart', color: '#3F51B5', categoryType: 'income', displayOrder: 7, isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'House Construction', icon: 'construction', color: '#795548', categoryType: 'expense', displayOrder: 19, isActive: true, createdAt: now(), updatedAt: now() },
+];
+
+export const seedSubCategories = (categoryMap: Record<string, number>): Omit<Category, 'id'>[] => [
+  { parentId: categoryMap['Food & Dining'], name: 'Breakfast', icon: 'free_breakfast', color: '#FF7043', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Food & Dining'], name: 'Lunch', icon: 'lunch_dining', color: '#FFA726', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Food & Dining'], name: 'Dinner', icon: 'dinner_dining', color: '#EF5350', categoryType: 'expense', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Food & Dining'], name: 'Coffee & Snacks', icon: 'local_cafe', color: '#8D6E63', categoryType: 'expense', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Fuel & Vehicle'], name: 'Petrol', icon: 'local_gas_station', color: '#FF9800', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Fuel & Vehicle'], name: 'Diesel', icon: 'local_gas_station', color: '#F57C00', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Fuel & Vehicle'], name: 'Vehicle Service', icon: 'car_repair', color: '#78909C', categoryType: 'expense', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Medical'], name: 'Hospital', icon: 'local_hospital', color: '#E53935', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Medical'], name: 'Medicine', icon: 'medication', color: '#EF5350', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Utilities'], name: 'Electricity', icon: 'bolt', color: '#FDD835', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Utilities'], name: 'Water', icon: 'water_drop', color: '#29B6F6', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Utilities'], name: 'Internet', icon: 'wifi', color: '#66BB6A', categoryType: 'expense', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Utilities'], name: 'Mobile Recharge', icon: 'phone_android', color: '#42A5F5', categoryType: 'expense', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Education'], name: 'School Fees', icon: 'school', color: '#3949AB', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Education'], name: 'Online Courses', icon: 'ondemand_video', color: '#5C6BC0', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Shopping'], name: 'Online Shopping', icon: 'shopping_cart', color: '#EC407A', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Shopping'], name: 'Clothing', icon: 'checkroom', color: '#AB47BC', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Entertainment'], name: 'Movies', icon: 'theaters', color: '#7B1FA2', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Entertainment'], name: 'Streaming', icon: 'play_circle', color: '#8E24AA', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Travel'], name: 'Vacation', icon: 'beach_access', color: '#00ACC1', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['Travel'], name: 'Train/Bus', icon: 'directions_railway', color: '#00838F', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Cement', icon: 'foundation', color: '#8D6E63', categoryType: 'expense', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Steel', icon: 'hardware', color: '#9E9E9E', categoryType: 'expense', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Labor', icon: 'engineering', color: '#FF7043', categoryType: 'expense', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Electrical', icon: 'electrical_services', color: '#FDD835', categoryType: 'expense', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Plumbing', icon: 'plumbing', color: '#29B6F6', categoryType: 'expense', displayOrder: 5, isActive: true, createdAt: now(), updatedAt: now() },
+  { parentId: categoryMap['House Construction'], name: 'Tiles & Flooring', icon: 'grid_on', color: '#A1887F', categoryType: 'expense', displayOrder: 6, isActive: true, createdAt: now(), updatedAt: now() },
+];
+
+export const seedTags: Omit<Tag, 'id'>[] = [
+  { name: 'Personal', color: '#2196F3', description: 'Personal expenses', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Family', color: '#4CAF50', description: 'Family expenses', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Business', color: '#FF9800', description: 'Business expenses', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Medical', color: '#F44336', description: 'Medical related', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Emergency', color: '#FF5722', description: 'Emergency expenses', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Vacation', color: '#00BCD4', description: 'Travel and vacation', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Investment', color: '#9C27B0', description: 'Investment related', isActive: true, createdAt: now(), updatedAt: now() },
+  { name: 'Tax', color: '#607D8B', description: 'Tax payments', isActive: true, createdAt: now(), updatedAt: now() },
+];
+
+export const seedGoalTypes: Omit<GoalType, 'id'>[] = [
+  { name: 'Emergency Fund', icon: 'emergency', color: '#F44336', isActive: true, displayOrder: 1, createdAt: now(), updatedAt: now() },
+  { name: 'House Purchase', icon: 'home', color: '#4CAF50', isActive: true, displayOrder: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Vehicle Purchase', icon: 'directions_car', color: '#2196F3', isActive: true, displayOrder: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Vacation', icon: 'flight', color: '#00BCD4', isActive: true, displayOrder: 4, createdAt: now(), updatedAt: now() },
+  { name: 'Education', icon: 'school', color: '#9C27B0', isActive: true, displayOrder: 5, createdAt: now(), updatedAt: now() },
+  { name: 'Retirement', icon: 'elderly', color: '#795548', isActive: true, displayOrder: 6, createdAt: now(), updatedAt: now() },
+  { name: 'Business', icon: 'business', color: '#FF9800', isActive: true, displayOrder: 7, createdAt: now(), updatedAt: now() },
+  { name: 'Other', icon: 'star', color: '#607D8B', isActive: true, displayOrder: 8, createdAt: now(), updatedAt: now() },
+];
+
+export const seedLoanTypes: Omit<LoanType, 'id'>[] = [
+  { name: 'Home Loan', description: 'Mortgage / Home loan', direction: 'borrowed', isActive: true, displayOrder: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Car Loan', description: 'Vehicle loan', direction: 'borrowed', isActive: true, displayOrder: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Personal Loan', description: 'Personal loan from bank', direction: 'borrowed', isActive: true, displayOrder: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Educational Loan', description: 'Education financing', direction: 'borrowed', isActive: true, displayOrder: 4, createdAt: now(), updatedAt: now() },
+  { name: 'Business Loan', description: 'Business financing', direction: 'borrowed', isActive: true, displayOrder: 5, createdAt: now(), updatedAt: now() },
+  { name: 'Friend/Family Borrowed', description: 'Money borrowed from friends or family', direction: 'borrowed', isActive: true, displayOrder: 6, createdAt: now(), updatedAt: now() },
+  { name: 'Friend/Family Lent', description: 'Money lent to friends or family', direction: 'lent', isActive: true, displayOrder: 7, createdAt: now(), updatedAt: now() },
+];
+
+export const seedAssetTypes: Omit<AssetType, 'id'>[] = [
+  { name: 'Cash & Bank', icon: 'account_balance', color: '#4CAF50', isActive: true, displayOrder: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Gold', icon: 'diamond', color: '#FFC107', isActive: true, displayOrder: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Silver', icon: 'circle', color: '#9E9E9E', isActive: true, displayOrder: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Real Estate', icon: 'home', color: '#795548', isActive: true, displayOrder: 4, createdAt: now(), updatedAt: now() },
+  { name: 'Vehicle', icon: 'directions_car', color: '#FF9800', isActive: true, displayOrder: 5, createdAt: now(), updatedAt: now() },
+  { name: 'Mutual Funds', icon: 'trending_up', color: '#9C27B0', isActive: true, displayOrder: 6, createdAt: now(), updatedAt: now() },
+  { name: 'Stocks', icon: 'show_chart', color: '#2196F3', isActive: true, displayOrder: 7, createdAt: now(), updatedAt: now() },
+  { name: 'Fixed Deposit', icon: 'savings', color: '#00BCD4', isActive: true, displayOrder: 8, createdAt: now(), updatedAt: now() },
+  { name: 'EPF', icon: 'work', color: '#3F51B5', isActive: true, displayOrder: 9, createdAt: now(), updatedAt: now() },
+  { name: 'PPF', icon: 'account_balance_wallet', color: '#009688', isActive: true, displayOrder: 10, createdAt: now(), updatedAt: now() },
+  { name: 'NPS', icon: 'elderly', color: '#607D8B', isActive: true, displayOrder: 11, createdAt: now(), updatedAt: now() },
+  { name: 'Crypto', icon: 'currency_bitcoin', color: '#FF6F00', isActive: true, displayOrder: 12, createdAt: now(), updatedAt: now() },
+];
+
+export const seedBudgetTypes: Omit<BudgetType, 'id'>[] = [
+  { name: 'Monthly Budget', period: 'monthly', isActive: true, displayOrder: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Weekly Budget', period: 'weekly', isActive: true, displayOrder: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Yearly Budget', period: 'yearly', isActive: true, displayOrder: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Project Budget', period: 'custom', isActive: true, displayOrder: 4, createdAt: now(), updatedAt: now() },
+];
+
+export const seedIncomeTypes: Omit<IncomeType, 'id'>[] = [
+  { name: 'Salary', icon: 'work', color: '#4CAF50', isActive: true, displayOrder: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Bonus', icon: 'emoji_events', color: '#FFC107', isActive: true, displayOrder: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Freelancing', icon: 'laptop', color: '#2196F3', isActive: true, displayOrder: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Rental', icon: 'apartment', color: '#9C27B0', isActive: true, displayOrder: 4, createdAt: now(), updatedAt: now() },
+  { name: 'Business', icon: 'store', color: '#FF9800', isActive: true, displayOrder: 5, createdAt: now(), updatedAt: now() },
+  { name: 'Investment Returns', icon: 'show_chart', color: '#00BCD4', isActive: true, displayOrder: 6, createdAt: now(), updatedAt: now() },
+  { name: 'Gift', icon: 'card_giftcard', color: '#E91E63', isActive: true, displayOrder: 7, createdAt: now(), updatedAt: now() },
+];
+
+export const seedDashboardWidgets: Omit<DashboardWidget, 'id'>[] = [
+  { name: 'Current Balance', componentKey: 'current-balance', description: 'Shows total balance across all accounts', defaultConfig: '{}', isActive: true, category: 'overview', icon: 'account_balance', minWidth: 1, minHeight: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Monthly Income', componentKey: 'monthly-income', description: 'Shows income for current month', defaultConfig: '{}', isActive: true, category: 'overview', icon: 'trending_up', minWidth: 1, minHeight: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Monthly Expense', componentKey: 'monthly-expense', description: 'Shows expenses for current month', defaultConfig: '{}', isActive: true, category: 'overview', icon: 'trending_down', minWidth: 1, minHeight: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Cash Flow', componentKey: 'cash-flow', description: 'Net cash flow for current month', defaultConfig: '{}', isActive: true, category: 'overview', icon: 'swap_vert', minWidth: 1, minHeight: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Budget Status', componentKey: 'budget-status', description: 'Overview of budget utilization', defaultConfig: '{}', isActive: true, category: 'budget', icon: 'donut_large', minWidth: 2, minHeight: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Goal Progress', componentKey: 'goal-progress', description: 'Financial goals progress', defaultConfig: '{}', isActive: true, category: 'goals', icon: 'flag', minWidth: 2, minHeight: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Account Balances', componentKey: 'account-balances', description: 'All account balances', defaultConfig: '{}', isActive: true, category: 'accounts', icon: 'credit_card', minWidth: 2, minHeight: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Top Categories', componentKey: 'top-categories', description: 'Top spending categories', defaultConfig: '{"limit":5}', isActive: true, category: 'analytics', icon: 'bar_chart', minWidth: 2, minHeight: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Recent Transactions', componentKey: 'recent-transactions', description: 'Recent transaction list', defaultConfig: '{"limit":10}', isActive: true, category: 'transactions', icon: 'receipt', minWidth: 2, minHeight: 3, createdAt: now(), updatedAt: now() },
+  { name: 'Net Worth', componentKey: 'net-worth', description: 'Total net worth (assets - liabilities)', defaultConfig: '{}', isActive: true, category: 'overview', icon: 'account_balance_wallet', minWidth: 1, minHeight: 1, createdAt: now(), updatedAt: now() },
+  { name: 'Income vs Expense', componentKey: 'income-expense-chart', description: 'Monthly income vs expense chart', defaultConfig: '{"months":6}', isActive: true, category: 'analytics', icon: 'bar_chart', minWidth: 3, minHeight: 2, createdAt: now(), updatedAt: now() },
+  { name: 'Expense By Category', componentKey: 'expense-pie-chart', description: 'Expense distribution by category', defaultConfig: '{}', isActive: true, category: 'analytics', icon: 'pie_chart', minWidth: 2, minHeight: 2, createdAt: now(), updatedAt: now() },
+];
+
+export const seedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
+  { name: 'Monthly Summary', reportType: 'monthly', description: 'Monthly income and expense summary', config: '{"groupBy":"category"}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+  { name: 'Category Report', reportType: 'category', description: 'Expenses grouped by category', config: '{}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+  { name: 'Cash Flow Report', reportType: 'cashflow', description: 'Monthly cash flow analysis', config: '{"months":12}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+  { name: 'Budget vs Actual', reportType: 'budget', description: 'Budget performance report', config: '{}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+  { name: 'Account Statement', reportType: 'account', description: 'Account-wise transaction list', config: '{}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+  { name: 'Annual Summary', reportType: 'yearly', description: 'Full year financial summary', config: '{}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
+];
+
+export function generateSampleTransactions(
+  accounts: Account[],
+  categories: Category[],
+  incomeTypeId: number,
+  expenseTypeId: number,
+): Omit<Transaction, 'id'>[] {
+  const txs: Omit<Transaction, 'id'>[] = [];
+  const expenseCategories = categories.filter(c => c.categoryType === 'expense' && !c.parentId);
+  const incomeCategories = categories.filter(c => c.categoryType === 'income' && !c.parentId);
+  const mainAccount = accounts[0];
+  const savingsAccount = accounts.length > 2 ? accounts[2] : accounts[0];
+
+  const expenseData = [
+    { desc: 'Lunch at restaurant', amount: 250, catName: 'Food & Dining' },
+    { desc: 'Grocery shopping', amount: 1200, catName: 'Groceries' },
+    { desc: 'Petrol', amount: 800, catName: 'Fuel & Vehicle' },
+    { desc: 'Electricity bill', amount: 1500, catName: 'Utilities' },
+    { desc: 'Internet bill', amount: 999, catName: 'Utilities' },
+    { desc: 'Mobile recharge', amount: 299, catName: 'Utilities' },
+    { desc: 'Movie tickets', amount: 600, catName: 'Entertainment' },
+    { desc: 'Online shopping', amount: 2400, catName: 'Shopping' },
+    { desc: 'Medicine', amount: 450, catName: 'Medical' },
+    { desc: 'Coffee & snacks', amount: 180, catName: 'Food & Dining' },
+    { desc: 'House rent', amount: 12000, catName: 'House Rent' },
+    { desc: 'EMI payment', amount: 15000, catName: 'EMI' },
+    { desc: 'Insurance premium', amount: 5000, catName: 'Insurance' },
+    { desc: 'Kids school fees', amount: 8000, catName: 'Kids' },
+    { desc: 'Dinner at hotel', amount: 1800, catName: 'Food & Dining' },
+    { desc: 'Vehicle service', amount: 3500, catName: 'Fuel & Vehicle' },
+    { desc: 'Clothing', amount: 3200, catName: 'Shopping' },
+    { desc: 'Doctor visit', amount: 600, catName: 'Medical' },
+    { desc: 'Train ticket', amount: 450, catName: 'Travel' },
+    { desc: 'Streaming subscription', amount: 199, catName: 'Subscriptions' },
+  ];
+
+  for (let monthOffset = 0; monthOffset < 12; monthOffset++) {
+    const monthStart = dayjs().subtract(monthOffset, 'month').startOf('month');
+
+    expenseData.forEach((e, i) => {
+      const cat = expenseCategories.find(c => c.name === e.catName) || expenseCategories[0];
+      const day = Math.min(i + 1, monthStart.daysInMonth());
+      txs.push({
+        transactionDate: monthStart.date(day).format('YYYY-MM-DD'),
+        accountId: mainAccount.id!,
+        transactionTypeId: expenseTypeId,
+        categoryId: cat?.id,
+        amount: e.amount * (0.9 + Math.random() * 0.2),
+        notes: e.desc,
+        isRecurring: false,
+        createdAt: now(),
+        updatedAt: now(),
+      });
+    });
+
+    const salaryDate = monthStart.date(1).format('YYYY-MM-DD');
+    const salaryCat = incomeCategories.find(c => c.name === 'Salary') || incomeCategories[0];
+    txs.push({
+      transactionDate: salaryDate,
+      accountId: savingsAccount.id!,
+      transactionTypeId: incomeTypeId,
+      categoryId: salaryCat?.id,
+      amount: 75000,
+      notes: 'Monthly salary',
+      isRecurring: true,
+      createdAt: now(),
+      updatedAt: now(),
+    });
+
+    if (monthOffset % 3 === 0) {
+      const freelanceCat = incomeCategories.find(c => c.name === 'Freelancing') || incomeCategories[1];
+      txs.push({
+        transactionDate: monthStart.date(15).format('YYYY-MM-DD'),
+        accountId: mainAccount.id!,
+        transactionTypeId: incomeTypeId,
+        categoryId: freelanceCat?.id,
+        amount: 25000 + Math.random() * 15000,
+        notes: 'Freelance project payment',
+        isRecurring: false,
+        createdAt: now(),
+        updatedAt: now(),
+      });
+    }
+  }
+
+  return txs;
+}
+
+export const seedAccounts = (accountTypes: AccountType[]): Omit<Account, 'id'>[] => {
+  const typeMap: Record<string, number> = {};
+  accountTypes.forEach(t => { typeMap[t.name] = t.id!; });
+
+  return [
+    { name: 'Cash Wallet', accountTypeId: typeMap['Cash'] || 1, openingBalance: 5000, currentBalance: 5000, currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'PhonePe Wallet', accountTypeId: typeMap['Wallet'] || 2, openingBalance: 2000, currentBalance: 2000, currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'HDFC Savings', accountTypeId: typeMap['Savings Account'] || 3, openingBalance: 150000, currentBalance: 150000, description: 'Primary savings account', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'SBI Current', accountTypeId: typeMap['Current Account'] || 4, openingBalance: 50000, currentBalance: 50000, description: 'Business current account', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'HDFC Credit Card', accountTypeId: typeMap['Credit Card'] || 5, openingBalance: 0, currentBalance: 0, description: 'HDFC Millennia Credit Card', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
+  ];
+};
+
+export const seedGoals = (goalTypes: GoalType[]): Omit<Goal, 'id'>[] => {
+  const typeMap: Record<string, number> = {};
+  goalTypes.forEach(t => { typeMap[t.name] = t.id!; });
+
+  return [
+    { goalName: 'Emergency Fund', goalTypeId: typeMap['Emergency Fund'] || 1, targetAmount: 300000, currentAmount: 85000, targetDate: dayjs().add(18, 'month').format('YYYY-MM-DD'), description: '6 months of expenses', isActive: true, createdAt: now(), updatedAt: now() },
+    { goalName: 'Family Vacation', goalTypeId: typeMap['Vacation'] || 4, targetAmount: 150000, currentAmount: 45000, targetDate: dayjs().add(8, 'month').format('YYYY-MM-DD'), description: 'Trip to Goa', isActive: true, createdAt: now(), updatedAt: now() },
+    { goalName: 'New Car', goalTypeId: typeMap['Vehicle Purchase'] || 3, targetAmount: 1200000, currentAmount: 350000, targetDate: dayjs().add(24, 'month').format('YYYY-MM-DD'), description: 'Sedan purchase', isActive: true, createdAt: now(), updatedAt: now() },
+    { goalName: 'House Down Payment', goalTypeId: typeMap['House Purchase'] || 2, targetAmount: 2500000, currentAmount: 800000, targetDate: dayjs().add(36, 'month').format('YYYY-MM-DD'), description: '20% down payment for home', isActive: true, createdAt: now(), updatedAt: now() },
+  ];
+};
+
+export const seedAssets = (assetTypes: AssetType[]): Omit<Asset, 'id'>[] => {
+  const typeMap: Record<string, number> = {};
+  assetTypes.forEach(t => { typeMap[t.name] = t.id!; });
+
+  return [
+    { name: 'Gold Jewelry', assetTypeId: typeMap['Gold'] || 2, purchaseValue: 250000, currentValue: 310000, purchaseDate: monthsAgo(24), quantity: 50, unit: 'grams', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'HDFC Top 100 MF', assetTypeId: typeMap['Mutual Funds'] || 6, purchaseValue: 100000, currentValue: 135000, purchaseDate: monthsAgo(18), isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Ancestral Land', assetTypeId: typeMap['Real Estate'] || 4, purchaseValue: 1500000, currentValue: 2000000, purchaseDate: monthsAgo(60), description: '2 acres agricultural land', isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Honda Activa', assetTypeId: typeMap['Vehicle'] || 5, purchaseValue: 75000, currentValue: 45000, purchaseDate: monthsAgo(36), isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'HDFC Bank FD', assetTypeId: typeMap['Fixed Deposit'] || 8, purchaseValue: 200000, currentValue: 225000, purchaseDate: monthsAgo(12), isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'EPF Account', assetTypeId: typeMap['EPF'] || 9, purchaseValue: 0, currentValue: 450000, isActive: true, createdAt: now(), updatedAt: now() },
+  ];
+};
+
+export const seedBudgets = (categories: Category[]): Omit<Budget, 'id'>[] => {
+  const catMap: Record<string, number> = {};
+  categories.filter(c => !c.parentId).forEach(c => { catMap[c.name] = c.id!; });
+  const startDate = dayjs().startOf('month').format('YYYY-MM-DD');
+  const endDate = dayjs().endOf('month').format('YYYY-MM-DD');
+
+  return [
+    { name: 'Food Budget', categoryId: catMap['Food & Dining'], amount: 8000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Shopping Budget', categoryId: catMap['Shopping'], amount: 5000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Entertainment Budget', categoryId: catMap['Entertainment'], amount: 3000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Fuel Budget', categoryId: catMap['Fuel & Vehicle'], amount: 4000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
+    { name: 'Groceries Budget', categoryId: catMap['Groceries'], amount: 6000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
+  ];
+};
+
+export const seedRecurring = (accounts: Account[], categories: Category[], expenseTypeId: number, incomeTypeId: number): Omit<RecurringTransaction, 'id'>[] => {
+  const mainAcc = accounts[0];
+  const savingsAcc = accounts[2] || accounts[0];
+  const salaryCat = categories.find(c => c.name === 'Salary');
+  const rentCat = categories.find(c => c.name === 'House Rent');
+  const utilsCat = categories.find(c => c.name === 'Utilities');
+
+  return [
+    { accountId: savingsAcc.id!, transactionTypeId: incomeTypeId, categoryId: salaryCat?.id, amount: 75000, description: 'Monthly Salary', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
+    { accountId: mainAcc.id!, transactionTypeId: expenseTypeId, categoryId: rentCat?.id, amount: 12000, description: 'House Rent', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
+    { accountId: mainAcc.id!, transactionTypeId: expenseTypeId, categoryId: utilsCat?.id, amount: 999, description: 'Internet Bill', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
+  ];
+};
