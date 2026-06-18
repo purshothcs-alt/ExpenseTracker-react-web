@@ -1,23 +1,12 @@
 import dayjs from 'dayjs';
 import type {
-  AccountType, Account, TransactionType, Category, Tag, Transaction,
+  TransactionType, Category, Tag,
   GoalType, Goal, LoanType, AssetType, Asset, BudgetType, Budget,
-  DashboardWidget, ReportTemplate, IncomeType, RecurringTransaction,
+  DashboardWidget, ReportTemplate, IncomeType,
 } from '../types';
 
 const now = () => new Date().toISOString();
-const daysAgo = (d: number) => dayjs().subtract(d, 'day').toISOString().split('T')[0];
 const monthsAgo = (m: number, day = 1) => dayjs().subtract(m, 'month').date(day).format('YYYY-MM-DD');
-
-export const seedAccountTypes: Omit<AccountType, 'id'>[] = [
-  { name: 'Cash', description: 'Physical cash', icon: 'payments', color: '#4CAF50', displayOrder: 1, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'Wallet', description: 'Digital wallet', icon: 'account_balance_wallet', color: '#2196F3', displayOrder: 2, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'Savings Account', description: 'Bank savings account', icon: 'savings', color: '#9C27B0', displayOrder: 3, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'Current Account', description: 'Bank current/checking account', icon: 'account_balance', color: '#FF9800', displayOrder: 4, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'Credit Card', description: 'Credit card account', icon: 'credit_card', color: '#F44336', displayOrder: 5, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'UPI', description: 'Unified Payment Interface', icon: 'smartphone', color: '#00BCD4', displayOrder: 6, isActive: true, createdAt: now(), updatedAt: now() },
-  { name: 'Business Account', description: 'Business bank account', icon: 'business', color: '#795548', displayOrder: 7, isActive: true, createdAt: now(), updatedAt: now() },
-];
 
 export const seedTransactionTypes: Omit<TransactionType, 'id'>[] = [
   { name: 'Income', description: 'Money received', icon: 'trending_up', color: '#4CAF50', direction: 'credit', isActive: true, displayOrder: 1, requiresToAccount: false, createdAt: now(), updatedAt: now() },
@@ -177,106 +166,6 @@ export const seedReportTemplates: Omit<ReportTemplate, 'id'>[] = [
   { name: 'Annual Summary', reportType: 'yearly', description: 'Full year financial summary', config: '{}', filters: '{}', isDefault: true, createdAt: now(), updatedAt: now() },
 ];
 
-export function generateSampleTransactions(
-  accounts: Account[],
-  categories: Category[],
-  incomeTypeId: number,
-  expenseTypeId: number,
-): Omit<Transaction, 'id'>[] {
-  const txs: Omit<Transaction, 'id'>[] = [];
-  const expenseCategories = categories.filter(c => c.categoryType === 'expense' && !c.parentId);
-  const incomeCategories = categories.filter(c => c.categoryType === 'income' && !c.parentId);
-  const mainAccount = accounts[0];
-  const savingsAccount = accounts.length > 2 ? accounts[2] : accounts[0];
-
-  const expenseData = [
-    { desc: 'Lunch at restaurant', amount: 250, catName: 'Food & Dining' },
-    { desc: 'Grocery shopping', amount: 1200, catName: 'Groceries' },
-    { desc: 'Petrol', amount: 800, catName: 'Fuel & Vehicle' },
-    { desc: 'Electricity bill', amount: 1500, catName: 'Utilities' },
-    { desc: 'Internet bill', amount: 999, catName: 'Utilities' },
-    { desc: 'Mobile recharge', amount: 299, catName: 'Utilities' },
-    { desc: 'Movie tickets', amount: 600, catName: 'Entertainment' },
-    { desc: 'Online shopping', amount: 2400, catName: 'Shopping' },
-    { desc: 'Medicine', amount: 450, catName: 'Medical' },
-    { desc: 'Coffee & snacks', amount: 180, catName: 'Food & Dining' },
-    { desc: 'House rent', amount: 12000, catName: 'House Rent' },
-    { desc: 'EMI payment', amount: 15000, catName: 'EMI' },
-    { desc: 'Insurance premium', amount: 5000, catName: 'Insurance' },
-    { desc: 'Kids school fees', amount: 8000, catName: 'Kids' },
-    { desc: 'Dinner at hotel', amount: 1800, catName: 'Food & Dining' },
-    { desc: 'Vehicle service', amount: 3500, catName: 'Fuel & Vehicle' },
-    { desc: 'Clothing', amount: 3200, catName: 'Shopping' },
-    { desc: 'Doctor visit', amount: 600, catName: 'Medical' },
-    { desc: 'Train ticket', amount: 450, catName: 'Travel' },
-    { desc: 'Streaming subscription', amount: 199, catName: 'Subscriptions' },
-  ];
-
-  for (let monthOffset = 0; monthOffset < 12; monthOffset++) {
-    const monthStart = dayjs().subtract(monthOffset, 'month').startOf('month');
-
-    expenseData.forEach((e, i) => {
-      const cat = expenseCategories.find(c => c.name === e.catName) || expenseCategories[0];
-      const day = Math.min(i + 1, monthStart.daysInMonth());
-      txs.push({
-        transactionDate: monthStart.date(day).format('YYYY-MM-DD'),
-        accountId: mainAccount.id!,
-        transactionTypeId: expenseTypeId,
-        categoryId: cat?.id,
-        amount: e.amount * (0.9 + Math.random() * 0.2),
-        notes: e.desc,
-        isRecurring: false,
-        createdAt: now(),
-        updatedAt: now(),
-      });
-    });
-
-    const salaryDate = monthStart.date(1).format('YYYY-MM-DD');
-    const salaryCat = incomeCategories.find(c => c.name === 'Salary') || incomeCategories[0];
-    txs.push({
-      transactionDate: salaryDate,
-      accountId: savingsAccount.id!,
-      transactionTypeId: incomeTypeId,
-      categoryId: salaryCat?.id,
-      amount: 75000,
-      notes: 'Monthly salary',
-      isRecurring: true,
-      createdAt: now(),
-      updatedAt: now(),
-    });
-
-    if (monthOffset % 3 === 0) {
-      const freelanceCat = incomeCategories.find(c => c.name === 'Freelancing') || incomeCategories[1];
-      txs.push({
-        transactionDate: monthStart.date(15).format('YYYY-MM-DD'),
-        accountId: mainAccount.id!,
-        transactionTypeId: incomeTypeId,
-        categoryId: freelanceCat?.id,
-        amount: 25000 + Math.random() * 15000,
-        notes: 'Freelance project payment',
-        isRecurring: false,
-        createdAt: now(),
-        updatedAt: now(),
-      });
-    }
-  }
-
-  return txs;
-}
-
-export const seedAccounts = (accountTypes: AccountType[]): Omit<Account, 'id'>[] => {
-  const typeMap: Record<string, number> = {};
-  accountTypes.forEach(t => { typeMap[t.name] = t.id!; });
-
-  return [
-    { name: 'Cash Wallet', accountTypeId: typeMap['Cash'] || 1, openingBalance: 5000, currentBalance: 5000, currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
-    { name: 'PhonePe Wallet', accountTypeId: typeMap['Wallet'] || 2, openingBalance: 2000, currentBalance: 2000, currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
-    { name: 'HDFC Savings', accountTypeId: typeMap['Savings Account'] || 3, openingBalance: 150000, currentBalance: 150000, description: 'Primary savings account', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
-    { name: 'SBI Current', accountTypeId: typeMap['Current Account'] || 4, openingBalance: 50000, currentBalance: 50000, description: 'Business current account', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
-    { name: 'HDFC Credit Card', accountTypeId: typeMap['Credit Card'] || 5, openingBalance: 0, currentBalance: 0, description: 'HDFC Millennia Credit Card', currency: 'INR', isActive: true, createdAt: now(), updatedAt: now() },
-  ];
-};
-
 export const seedGoals = (goalTypes: GoalType[]): Omit<Goal, 'id'>[] => {
   const typeMap: Record<string, number> = {};
   goalTypes.forEach(t => { typeMap[t.name] = t.id!; });
@@ -315,19 +204,5 @@ export const seedBudgets = (categories: Category[]): Omit<Budget, 'id'>[] => {
     { name: 'Entertainment Budget', categoryId: catMap['Entertainment'], amount: 3000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
     { name: 'Fuel Budget', categoryId: catMap['Fuel & Vehicle'], amount: 4000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
     { name: 'Groceries Budget', categoryId: catMap['Groceries'], amount: 6000, startDate, endDate, period: 'monthly', alertThreshold: 80, isActive: true, createdAt: now(), updatedAt: now() },
-  ];
-};
-
-export const seedRecurring = (accounts: Account[], categories: Category[], expenseTypeId: number, incomeTypeId: number): Omit<RecurringTransaction, 'id'>[] => {
-  const mainAcc = accounts[0];
-  const savingsAcc = accounts[2] || accounts[0];
-  const salaryCat = categories.find(c => c.name === 'Salary');
-  const rentCat = categories.find(c => c.name === 'House Rent');
-  const utilsCat = categories.find(c => c.name === 'Utilities');
-
-  return [
-    { accountId: savingsAcc.id!, transactionTypeId: incomeTypeId, categoryId: salaryCat?.id, amount: 75000, description: 'Monthly Salary', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
-    { accountId: mainAcc.id!, transactionTypeId: expenseTypeId, categoryId: rentCat?.id, amount: 12000, description: 'House Rent', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
-    { accountId: mainAcc.id!, transactionTypeId: expenseTypeId, categoryId: utilsCat?.id, amount: 999, description: 'Internet Bill', frequency: 'monthly', startDate: daysAgo(365), isActive: true, createdAt: now(), updatedAt: now() },
   ];
 };
