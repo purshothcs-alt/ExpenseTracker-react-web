@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import {
   Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  Collapse, Typography, Divider, useTheme, alpha,
+  Collapse, Typography, Divider, useTheme, useMediaQuery, alpha,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -19,7 +19,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '@app/hooks';
+import { useAppDispatch, useAppSelector } from '@app/hooks';
+import { setSidebarOpen } from '@app/uiSlice';
 
 interface NavItem {
   label: string;
@@ -53,6 +54,8 @@ function NavItemComponent({ item }: NavItemProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const isActive = item.path === '/'
     ? location.pathname === '/'
@@ -90,6 +93,7 @@ function NavItemComponent({ item }: NavItemProps) {
       <ListItemButton
         component={NavLink}
         to={item.path}
+        onClick={() => { if (isMobile) dispatch(setSidebarOpen(false)); }}
         sx={{
           borderRadius: 2, mx: 1,
           bgcolor: isActive ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
