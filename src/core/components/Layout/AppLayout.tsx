@@ -1,6 +1,5 @@
 import { Box, Drawer, useMediaQuery, useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
 import { Navigation } from './Navigation';
 import { TopBar } from './TopBar';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
@@ -17,11 +16,6 @@ export function AppLayout({ children }: Props) {
   const sidebarOpen = useAppSelector(s => s.ui.sidebarOpen);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
-  useEffect(() => {
-    if (isMobile) dispatch(setSidebarOpen(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleClose = () => dispatch(setSidebarOpen(false));
 

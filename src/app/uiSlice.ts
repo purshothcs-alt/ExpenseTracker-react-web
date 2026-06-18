@@ -20,8 +20,10 @@ interface UIState {
   };
 }
 
+const MOBILE_BREAKPOINT = 900;
+
 const initialState: UIState = {
-  sidebarOpen: true,
+  sidebarOpen: typeof window === 'undefined' || window.innerWidth >= MOBILE_BREAKPOINT,
   notifications: [],
   globalLoading: false,
   confirmDialog: { open: false, title: '', message: '' },
