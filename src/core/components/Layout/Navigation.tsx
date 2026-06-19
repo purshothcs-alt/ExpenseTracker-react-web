@@ -112,11 +112,26 @@ function NavItemComponent({ item }: NavItemProps) {
 export function Navigation() {
   const { t } = useTranslation();
   const appName = useAppSelector(s => s.settings.settings.appName);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const dispatch = useAppDispatch();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={{ p: 2.5, pb: 1.5 }}>
-        <Box display="flex" alignItems="center" gap={1.5}>
+        <Box
+          component={NavLink}
+          to="/"
+          onClick={() => { if (isMobile) dispatch(setSidebarOpen(false)); }}
+          display="flex"
+          alignItems="center"
+          gap={1.5}
+          sx={{
+            textDecoration: 'none', color: 'inherit', borderRadius: 2, p: 0.5, m: -0.5,
+            transition: 'opacity 0.15s', '&:hover': { opacity: 0.8 },
+          }}
+          aria-label="Go to dashboard"
+        >
           <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'primary.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AccountCircleIcon sx={{ color: '#fff', fontSize: 20 }} />
           </Box>

@@ -1,6 +1,7 @@
 import { Grid, Button, Box } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
+import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
 import { PageHeader } from '@core/components/common/PageHeader';
 import { SummaryWidgets } from '../components/widgets/SummaryWidget';
@@ -11,9 +12,11 @@ import { AccountBalancesWidget } from '../components/widgets/AccountBalancesWidg
 import { BudgetStatusWidget } from '../components/widgets/BudgetStatusWidget';
 import { GoalProgressWidget } from '../components/widgets/GoalProgressWidget';
 import { DashboardCustomizer } from '../components/DashboardCustomizer';
+import { TransactionForm } from '@features/transactions/components/TransactionForm';
 
 export function DashboardPage() {
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
 
   return (
     <Box>
@@ -22,14 +25,24 @@ export function DashboardPage() {
         icon={<DashboardIcon sx={{ fontSize: 28 }} />}
         subtitle="Overview of your finances"
         actions={
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<TuneIcon />}
-            onClick={() => setCustomizerOpen(true)}
-          >
-            Customize
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<TuneIcon />}
+              onClick={() => setCustomizerOpen(true)}
+            >
+              Customize
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => setTransactionFormOpen(true)}
+            >
+              Add Transaction
+            </Button>
+          </Box>
         }
       />
 
@@ -59,6 +72,7 @@ export function DashboardPage() {
       </Grid>
 
       <DashboardCustomizer open={customizerOpen} onClose={() => setCustomizerOpen(false)} />
+      <TransactionForm open={transactionFormOpen} onClose={() => setTransactionFormOpen(false)} />
     </Box>
   );
 }

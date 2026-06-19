@@ -99,5 +99,10 @@
     "theme": "தீம்",
     "language": "மொழி",
     "settingsSaved": "அமைப்புகள் சேமிக்கப்பட்டன"
+  },
+  "pwa": {
+    "installApp": "பயன்பாட்டை நிறுவு",
+    "iosInstallTitle": "iOS-இல் நிறுவு",
+    "iosInstallInstructions": "உங்கள் browser-இன் Share ஐகானை தட்டி, \"Add to Home Screen\" ஐ தேர்ந்தெடுக்கவும்."
   }
 }

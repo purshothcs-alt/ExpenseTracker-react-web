@@ -290,6 +290,11 @@
     "autoBackup": "Auto Backup",
     "settingsSaved": "Settings saved successfully"
   },
+  "pwa": {
+    "installApp": "Install App",
+    "iosInstallTitle": "Install on iOS",
+    "iosInstallInstructions": "Tap the Share icon in your browser's toolbar, then select \"Add to Home Screen\"."
+  },
   "admin": {
     "title": "Administration",
     "categories": "Categories",
