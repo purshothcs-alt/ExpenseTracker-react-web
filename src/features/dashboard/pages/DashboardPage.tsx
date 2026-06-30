@@ -27,7 +27,7 @@ export function DashboardPage() {
         icon={<DashboardIcon sx={{ fontSize: 28 }} />}
         subtitle="Overview of your finances"
         actions={
-          <Box display="flex" gap={1}>
+          <Box display="flex" gap={1} flexWrap="wrap" width={{ xs: '100%', sm: 'auto' }}>
             <Button
               component={Link}
               to="/transactions"

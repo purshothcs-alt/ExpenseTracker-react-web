@@ -100,6 +100,10 @@ export class ExpenseTrackerDB extends Dexie {
       auditLogs: '++id, entityType, entityId, createdAt',
       incomeTypes: '++id, name, isActive',
     });
+
+    this.version(2).stores({
+      projectExpenses: '++id, projectId, categoryId, expenseDate, transactionId',
+    });
   }
 }
 

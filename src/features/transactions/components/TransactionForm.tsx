@@ -83,6 +83,7 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const selectedTypeId = watch('transactionTypeId');
   const selectedType = txTypes.find((t) => t.id === selectedTypeId);
   const isTransfer = selectedType?.direction === 'transfer';
+  const isExpenseType = selectedType?.direction === 'debit';
 
   const newCategoryType: CategoryType = selectedType?.direction === 'credit' ? 'income' : 'expense';
 
@@ -92,6 +93,14 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
     () => categories.filter((c) => c.parentId === selectedCategoryId),
     [categories, selectedCategoryId],
   );
+
+  const projectIdValue = watch('projectId');
+  useEffect(() => {
+    if (txTypes.length === 0) return;
+    if (selectedTypeId && !isExpenseType && projectIdValue) {
+      setValue('projectId', null);
+    }
+  }, [isExpenseType, selectedTypeId, txTypes.length, projectIdValue, setValue]);
 
   const onSubmit = async (data: TransactionFormData) => {
     const { tagIds, toAccountId, categoryId, subCategoryId, projectId, ...rest } = data;
@@ -409,7 +418,7 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
               />
             </Grid>
 
-            {projects.length > 0 && (
+            {isExpenseType && projects.length > 0 && (
               <Grid size={12}>
                 <Controller
                   name="projectId"

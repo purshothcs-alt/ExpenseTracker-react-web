@@ -4,6 +4,7 @@ import { Navigation } from './Navigation';
 import { TopBar } from './TopBar';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { setSidebarOpen } from '@app/uiSlice';
+import { useNotificationGenerator } from '@core/hooks/useNotificationGenerator';
 
 const DRAWER_WIDTH = 260;
 
@@ -16,6 +17,7 @@ export function AppLayout({ children }: Props) {
   const sidebarOpen = useAppSelector((s) => s.ui.sidebarOpen);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  useNotificationGenerator();
 
   const handleClose = () => dispatch(setSidebarOpen(false));
 
@@ -82,6 +84,7 @@ export function AppLayout({ children }: Props) {
           px: { xs: 2, md: 3 },
           pb: 3,
           maxWidth: '100%',
+          overflowX: 'hidden',
         }}
       >
         {children}

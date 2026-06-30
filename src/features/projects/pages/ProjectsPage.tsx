@@ -18,11 +18,13 @@ import {
   Tab,
   Avatar,
   InputAdornment,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ConstructionIcon from '@mui/icons-material/Construction';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -135,9 +137,22 @@ function ProjectExpensesPanel({ projectId }: { projectId: number }) {
             borderColor="divider"
           >
             <Box>
-              <Typography variant="body2" fontWeight={500}>
-                {e.description}
-              </Typography>
+              <Box display="flex" alignItems="center" gap={0.75}>
+                <Typography variant="body2" fontWeight={500}>
+                  {e.description}
+                </Typography>
+                {e.transactionId && (
+                  <Tooltip title="Synced automatically from a transaction">
+                    <Chip
+                      icon={<SyncIcon sx={{ fontSize: 12 }} />}
+                      label="From transaction"
+                      size="small"
+                      variant="outlined"
+                      sx={{ height: 18, fontSize: '0.6rem' }}
+                    />
+                  </Tooltip>
+                )}
+              </Box>
               <Typography variant="caption" color="text.secondary">
                 {formatDate(e.expenseDate)}{' '}
                 {e.categoryId ? ` • ${catMap.get(e.categoryId)?.name}` : ''}{' '}
@@ -148,9 +163,19 @@ function ProjectExpensesPanel({ projectId }: { projectId: number }) {
               <Typography variant="body2" fontWeight={700}>
                 {formatCurrency(e.amount)}
               </Typography>
-              <IconButton size="small" color="error" onClick={() => deleteExpense(e.id!)}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+              {e.transactionId ? (
+                <Tooltip title="Edit or delete the linked transaction instead">
+                  <span>
+                    <IconButton size="small" disabled>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ) : (
+                <IconButton size="small" color="error" onClick={() => deleteExpense(e.id!)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )}
             </Box>
           </Box>
         ))

@@ -5,6 +5,7 @@ interface Notification {
   id: string;
   message: string;
   severity: 'success' | 'error' | 'warning' | 'info';
+  createdAt: number;
 }
 
 interface UIState {
@@ -39,11 +40,16 @@ const uiSlice = createSlice({
     setSidebarOpen(state, action: PayloadAction<boolean>) {
       state.sidebarOpen = action.payload;
     },
-    addNotification(state, action: PayloadAction<Omit<Notification, 'id'>>) {
-      state.notifications.push({ ...action.payload, id: Date.now().toString() });
+    addNotification(state, action: PayloadAction<Omit<Notification, 'id' | 'createdAt'>>) {
+      const now = Date.now();
+      const id = `${now}-${Math.random().toString(36).slice(2, 8)}`;
+      state.notifications.unshift({ ...action.payload, id, createdAt: now });
     },
     removeNotification(state, action: PayloadAction<string>) {
       state.notifications = state.notifications.filter((n) => n.id !== action.payload);
+    },
+    clearNotifications(state) {
+      state.notifications = [];
     },
     setGlobalLoading(state, action: PayloadAction<boolean>) {
       state.globalLoading = action.payload;
@@ -62,6 +68,7 @@ export const {
   setSidebarOpen,
   addNotification,
   removeNotification,
+  clearNotifications,
   setGlobalLoading,
   openConfirmDialog,
   closeConfirmDialog,

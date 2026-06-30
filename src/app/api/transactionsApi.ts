@@ -96,7 +96,7 @@ export const transactionsApi = baseApi.injectEndpoints({
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
         }
       },
-      invalidatesTags: ['Transaction', 'Account'],
+      invalidatesTags: ['Transaction', 'Account', 'Project', 'ProjectExpense'],
     }),
 
     updateTransaction: builder.mutation<
@@ -111,7 +111,7 @@ export const transactionsApi = baseApi.injectEndpoints({
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
         }
       },
-      invalidatesTags: ['Transaction', 'Account'],
+      invalidatesTags: ['Transaction', 'Account', 'Project', 'ProjectExpense'],
     }),
 
     deleteTransaction: builder.mutation<void, number>({
@@ -123,7 +123,7 @@ export const transactionsApi = baseApi.injectEndpoints({
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
         }
       },
-      invalidatesTags: ['Transaction', 'Account'],
+      invalidatesTags: ['Transaction', 'Account', 'Project', 'ProjectExpense'],
     }),
 
     bulkDeleteTransactions: builder.mutation<void, number[]>({
@@ -135,7 +135,7 @@ export const transactionsApi = baseApi.injectEndpoints({
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
         }
       },
-      invalidatesTags: ['Transaction', 'Account'],
+      invalidatesTags: ['Transaction', 'Account', 'Project', 'ProjectExpense'],
     }),
 
     duplicateTransaction: builder.mutation<number, number>({
@@ -156,7 +156,7 @@ export const transactionsApi = baseApi.injectEndpoints({
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
         }
       },
-      invalidatesTags: ['Transaction', 'Account'],
+      invalidatesTags: ['Transaction', 'Account', 'Project', 'ProjectExpense'],
     }),
 
     getTransactionTypes: builder.query<TransactionType[], void>({

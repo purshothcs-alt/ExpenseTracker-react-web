@@ -21,7 +21,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
@@ -29,6 +28,7 @@ import { toggleSidebar } from '@app/uiSlice';
 import { saveSetting } from '@app/settingsSlice';
 import { useInstallPrompt } from '@core/hooks/useInstallPrompt';
 import { useApiLoading } from '@core/hooks/useApiLoading';
+import { NotificationBell } from './NotificationBell';
 
 const DRAWER_WIDTH = 260;
 
@@ -116,11 +116,7 @@ export function TopBar({ open }: Props) {
           </IconButton>
         </Tooltip>
 
-        <Tooltip title="Notifications">
-          <IconButton color="inherit">
-            <NotificationsNoneIcon />
-          </IconButton>
-        </Tooltip>
+        <NotificationBell />
       </Toolbar>
 
       <Fade in={apiLoading} unmountOnExit>

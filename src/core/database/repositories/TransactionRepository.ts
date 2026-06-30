@@ -103,6 +103,9 @@ export class TransactionRepository {
     await this.updateAccountBalance(data.accountId);
     if (data.toAccountId) await this.updateAccountBalance(data.toAccountId);
 
+    const created = await db.transactions.get(id as number);
+    if (created) await this.syncProjectExpense(created);
+
     return id as number;
   }
 
@@ -123,6 +126,9 @@ export class TransactionRepository {
     }
     if (data.accountId) await this.updateAccountBalance(data.accountId);
     if (data.toAccountId) await this.updateAccountBalance(data.toAccountId);
+
+    const updated = await db.transactions.get(id);
+    if (updated) await this.syncProjectExpense(updated);
   }
 
   async delete(id: number): Promise<void> {
@@ -130,10 +136,47 @@ export class TransactionRepository {
     if (!tx) return;
 
     await db.transactionTags.where('transactionId').equals(id).delete();
+    await db.projectExpenses.where('transactionId').equals(id).delete();
     await db.transactions.delete(id);
 
     await this.updateAccountBalance(tx.accountId);
     if (tx.toAccountId) await this.updateAccountBalance(tx.toAccountId);
+  }
+
+  /**
+   * Keeps a project's expense ledger in sync with transactions tagged to it.
+   * Only debit (expense) transactions produce a ProjectExpense; income/transfer
+   * transactions, or removing the project tag, clear any previously synced entry.
+   */
+  private async syncProjectExpense(tx: Transaction): Promise<void> {
+    const existingExpense = await db.projectExpenses.where('transactionId').equals(tx.id!).first();
+
+    let isDebit = false;
+    if (tx.projectId) {
+      const txType = await db.transactionTypes.get(tx.transactionTypeId);
+      isDebit = txType?.direction === 'debit';
+    }
+
+    if (tx.projectId && isDebit) {
+      const ts = new Date().toISOString();
+      const expenseData = {
+        projectId: tx.projectId,
+        categoryId: tx.categoryId,
+        description: tx.notes || tx.vendor || 'Transaction expense',
+        amount: tx.amount,
+        expenseDate: tx.transactionDate,
+        vendor: tx.vendor,
+        notes: tx.notes,
+        transactionId: tx.id,
+      };
+      if (existingExpense) {
+        await db.projectExpenses.update(existingExpense.id!, { ...expenseData, updatedAt: ts });
+      } else {
+        await db.projectExpenses.add({ ...expenseData, createdAt: ts, updatedAt: ts });
+      }
+    } else if (existingExpense) {
+      await db.projectExpenses.delete(existingExpense.id!);
+    }
   }
 
   private async updateAccountBalance(accountId: number): Promise<void> {

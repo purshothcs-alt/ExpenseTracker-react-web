@@ -186,7 +186,7 @@ export function TransactionsPage() {
         icon={<ReceiptLongIcon sx={{ fontSize: 28 }} />}
         subtitle={`${total} transaction${total !== 1 ? 's' : ''}`}
         actions={
-          <Box display="flex" gap={1}>
+          <Box display="flex" gap={1} flexWrap="wrap" width={{ xs: '100%', sm: 'auto' }}>
             {selectedIds.length > 0 && (
               <Button
                 variant="outlined"

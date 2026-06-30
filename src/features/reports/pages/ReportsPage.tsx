@@ -152,7 +152,7 @@ export function ReportsPage() {
         icon={<AssessmentIcon sx={{ fontSize: 28 }} />}
         subtitle="Financial analytics and reports"
         actions={
-          <Box display="flex" gap={1}>
+          <Box display="flex" gap={1} flexWrap="wrap" width={{ xs: '100%', sm: 'auto' }}>
             <Button
               variant="outlined"
               startIcon={<PictureAsPdfIcon />}
