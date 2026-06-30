@@ -39,7 +39,7 @@ describe('formatCurrency', () => {
   });
 
   it('hides cents when showCents=false', () => {
-    const result = formatCurrency(1000.50, mockSettings, false);
+    const result = formatCurrency(1000.5, mockSettings, false);
     expect(result).not.toContain('.50');
   });
 });

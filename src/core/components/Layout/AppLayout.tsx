@@ -13,7 +13,7 @@ interface Props {
 
 export function AppLayout({ children }: Props) {
   const dispatch = useAppDispatch();
-  const sidebarOpen = useAppSelector(s => s.ui.sidebarOpen);
+  const sidebarOpen = useAppSelector((s) => s.ui.sidebarOpen);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -31,7 +31,8 @@ export function AppLayout({ children }: Props) {
           ModalProps={{ keepMounted: true }}
           sx={{
             '& .MuiDrawer-paper': {
-              width: DRAWER_WIDTH, boxSizing: 'border-box',
+              width: DRAWER_WIDTH,
+              boxSizing: 'border-box',
               bgcolor: 'background.paper',
             },
           }}

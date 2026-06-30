@@ -52,8 +52,12 @@ export function SummaryWidgets() {
 
   return (
     <Grid container spacing={2} mb={3}>
-      {cards.map(card => (
-        <Grid key={card.title} size={{ xs: 6, sm: 4, md: 3, lg: 'auto' }} sx={{ flexGrow: 1, minWidth: 140 }}>
+      {cards.map((card) => (
+        <Grid
+          key={card.title}
+          size={{ xs: 6, sm: 4, md: 3, lg: 'auto' }}
+          sx={{ flexGrow: 1, minWidth: 140 }}
+        >
           <StatCard {...card} loading={isLoading} />
         </Grid>
       ))}

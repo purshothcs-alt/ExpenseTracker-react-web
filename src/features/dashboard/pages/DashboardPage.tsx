@@ -2,7 +2,9 @@ import { Grid, Button, Box } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
 import AddIcon from '@mui/icons-material/Add';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { PageHeader } from '@core/components/common/PageHeader';
 import { SummaryWidgets } from '../components/widgets/SummaryWidget';
 import { IncomeExpenseChart } from '../components/widgets/IncomeExpenseChart';
@@ -26,6 +28,15 @@ export function DashboardPage() {
         subtitle="Overview of your finances"
         actions={
           <Box display="flex" gap={1}>
+            <Button
+              component={Link}
+              to="/transactions"
+              variant="outlined"
+              size="small"
+              startIcon={<ReceiptLongIcon />}
+            >
+              Transactions
+            </Button>
             <Button
               variant="outlined"
               size="small"

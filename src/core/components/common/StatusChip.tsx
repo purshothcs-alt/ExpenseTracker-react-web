@@ -9,7 +9,12 @@ interface Props {
   size?: 'small' | 'medium';
 }
 
-export function StatusChip({ isActive, activeLabel = 'Active', inactiveLabel = 'Inactive', size = 'small' }: Props) {
+export function StatusChip({
+  isActive,
+  activeLabel = 'Active',
+  inactiveLabel = 'Inactive',
+  size = 'small',
+}: Props) {
   return (
     <Chip
       size={size}

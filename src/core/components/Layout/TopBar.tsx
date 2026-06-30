@@ -1,8 +1,20 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router';
 import {
-  AppBar, Toolbar, IconButton, Typography, Box, Tooltip, useMediaQuery, useTheme,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Box,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -26,7 +38,7 @@ export function TopBar({ open }: Props) {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { themeMode, appName } = useAppSelector(s => s.settings.settings);
+  const { themeMode, appName } = useAppSelector((s) => s.settings.settings);
   const { canInstall, showIosInstructions, promptInstall } = useInstallPrompt();
   const [iosDialogOpen, setIosDialogOpen] = useState(false);
 
@@ -50,19 +62,20 @@ export function TopBar({ open }: Props) {
       sx={{
         bgcolor: 'background.paper',
         color: 'text.primary',
-        zIndex: theme => theme.zIndex.drawer + 1,
+        zIndex: (theme) => theme.zIndex.drawer + 1,
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,
         }),
-        ...(open && !isMobile && {
-          marginLeft: DRAWER_WIDTH,
-          width: `calc(100% - ${DRAWER_WIDTH}px)`,
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
+        ...(open &&
+          !isMobile && {
+            marginLeft: DRAWER_WIDTH,
+            width: `calc(100% - ${DRAWER_WIDTH}px)`,
+            transition: theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
           }),
-        }),
       }}
     >
       <Toolbar sx={{ gap: 1 }}>

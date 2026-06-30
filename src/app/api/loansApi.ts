@@ -3,23 +3,31 @@ import db from '@core/database/db';
 import type { Loan, LoanType, LoanRepayment, LoanWithDetails } from '@core/database/types';
 
 export const loansApi = baseApi.injectEndpoints({
-  endpoints: builder => ({
+  endpoints: (builder) => ({
     getLoans: builder.query<LoanWithDetails[], void>({
       queryFn: async () => {
         try {
           const loans = await db.loans.toArray();
           const loanTypes = await db.loanTypes.toArray();
-          const typeMap = new Map(loanTypes.map(t => [t.id!, t]));
+          const typeMap = new Map(loanTypes.map((t) => [t.id!, t]));
           const data: LoanWithDetails[] = await Promise.all(
-            loans.map(async l => {
+            loans.map(async (l) => {
               const repayments = await db.loanRepayments.where('loanId').equals(l.id!).toArray();
               const totalPaid = repayments.reduce((s, r) => s + r.amount, 0);
               const outstanding = l.principal - totalPaid;
-              return { ...l, loanType: typeMap.get(l.loanTypeId), totalPaid, outstanding, repayments };
+              return {
+                ...l,
+                loanType: typeMap.get(l.loanTypeId),
+                totalPaid,
+                outstanding,
+                repayments,
+              };
             }),
           );
           return { data };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       providesTags: ['Loan'],
     }),
@@ -30,7 +38,9 @@ export const loansApi = baseApi.injectEndpoints({
           const ts = new Date().toISOString();
           const id = await db.loans.add({ ...data, createdAt: ts, updatedAt: ts });
           return { data: id as number };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['Loan'],
     }),
@@ -40,7 +50,9 @@ export const loansApi = baseApi.injectEndpoints({
         try {
           await db.loans.update(id, { ...data, updatedAt: new Date().toISOString() });
           return { data: undefined };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['Loan'],
     }),
@@ -51,7 +63,9 @@ export const loansApi = baseApi.injectEndpoints({
           await db.loanRepayments.where('loanId').equals(id).delete();
           await db.loans.delete(id);
           return { data: undefined };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['Loan'],
     }),
@@ -68,23 +82,31 @@ export const loansApi = baseApi.injectEndpoints({
             await db.loans.update(data.loanId, { isSettled: true, settledDate: ts, updatedAt: ts });
           }
           return { data: id as number };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['Loan'],
     }),
 
     getLoanTypes: builder.query<LoanType[], void>({
       queryFn: async () => {
-        try { return { data: await db.loanTypes.filter(t => t.isActive !== false).toArray() }; }
-        catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        try {
+          return { data: await db.loanTypes.filter((t) => t.isActive !== false).toArray() };
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       providesTags: ['LoanType'],
     }),
 
     getAllLoanTypes: builder.query<LoanType[], void>({
       queryFn: async () => {
-        try { return { data: await db.loanTypes.toArray() }; }
-        catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        try {
+          return { data: await db.loanTypes.toArray() };
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       providesTags: ['LoanType'],
     }),
@@ -95,7 +117,9 @@ export const loansApi = baseApi.injectEndpoints({
           const ts = new Date().toISOString();
           const id = await db.loanTypes.add({ ...data, createdAt: ts, updatedAt: ts });
           return { data: id as number };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['LoanType'],
     }),
@@ -105,7 +129,9 @@ export const loansApi = baseApi.injectEndpoints({
         try {
           await db.loanTypes.update(id, { ...data, updatedAt: new Date().toISOString() });
           return { data: undefined };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['LoanType'],
     }),
@@ -115,7 +141,9 @@ export const loansApi = baseApi.injectEndpoints({
         try {
           await db.loanTypes.delete(id);
           return { data: undefined };
-        } catch (e) { return { error: { status: 'CUSTOM_ERROR', error: String(e) } }; }
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
       },
       invalidatesTags: ['LoanType'],
     }),
@@ -123,8 +151,14 @@ export const loansApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetLoansQuery, useCreateLoanMutation, useUpdateLoanMutation, useDeleteLoanMutation,
+  useGetLoansQuery,
+  useCreateLoanMutation,
+  useUpdateLoanMutation,
+  useDeleteLoanMutation,
   useAddRepaymentMutation,
-  useGetLoanTypesQuery, useGetAllLoanTypesQuery,
-  useCreateLoanTypeMutation, useUpdateLoanTypeMutation, useDeleteLoanTypeMutation,
+  useGetLoanTypesQuery,
+  useGetAllLoanTypesQuery,
+  useCreateLoanTypeMutation,
+  useUpdateLoanTypeMutation,
+  useDeleteLoanTypeMutation,
 } = loansApi;

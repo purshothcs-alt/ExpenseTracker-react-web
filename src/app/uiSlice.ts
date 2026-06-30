@@ -43,7 +43,7 @@ const uiSlice = createSlice({
       state.notifications.push({ ...action.payload, id: Date.now().toString() });
     },
     removeNotification(state, action: PayloadAction<string>) {
-      state.notifications = state.notifications.filter(n => n.id !== action.payload);
+      state.notifications = state.notifications.filter((n) => n.id !== action.payload);
     },
     setGlobalLoading(state, action: PayloadAction<boolean>) {
       state.globalLoading = action.payload;
@@ -58,7 +58,12 @@ const uiSlice = createSlice({
 });
 
 export const {
-  toggleSidebar, setSidebarOpen, addNotification, removeNotification,
-  setGlobalLoading, openConfirmDialog, closeConfirmDialog,
+  toggleSidebar,
+  setSidebarOpen,
+  addNotification,
+  removeNotification,
+  setGlobalLoading,
+  openConfirmDialog,
+  closeConfirmDialog,
 } = uiSlice.actions;
 export default uiSlice.reducer;

@@ -40,6 +40,16 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBytes, data, crc]);
 }
 
+// Shortest distance from point (px,py) to segment (ax,ay)-(bx,by)
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  let t = lenSq === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx, cy = ay + t * dy;
+  return Math.hypot(px - cx, py - cy);
+}
+
 function makePNG(size, r, g, b) {
   // IHDR
   const ihdr = Buffer.alloc(13);
@@ -68,20 +78,18 @@ function makePNG(size, r, g, b) {
         Math.hypot(dx - (radius - cornerR), dy - (radius - cornerR)) <= cornerR;
 
       if (inRect && inRoundedCorner) {
-        // Rupee ₹ symbol area — draw a simplified "R" shape
+        // Rupee ₹ symbol: a left vertical stroke, two open-ended top
+        // crossbars, and a diagonal leg sweeping to the bottom right.
         const nx = (x - cx) / radius;  // -1 to 1
         const ny = (y - cy) / radius;  // -1 to 1
+        const sw = 0.16; // stroke width, in normalized units
 
-        // Vertical stroke of ₹ (left side)
-        const inVStroke = nx > -0.55 && nx < -0.2 && ny > -0.7 && ny < 0.7;
-        // Top horizontal bar
-        const inTopBar = nx > -0.55 && nx < 0.45 && ny > -0.7 && ny < -0.4;
-        // Middle horizontal bar
-        const inMidBar = nx > -0.55 && nx < 0.45 && ny > -0.1 && ny < 0.2;
-        // Diagonal stroke (₹ slash)
-        const onDiag = Math.abs((ny - 0.2) - (nx - 0.45) * 1.4) < 0.15 && nx > -0.2 && ny > 0.2;
+        const inLeftStroke = nx > -0.5 && nx < -0.5 + sw && ny > -0.62 && ny < -0.04;
+        const inTopBar = nx > -0.5 && nx < 0.34 && ny > -0.62 && ny < -0.62 + sw;
+        const inMidBar = nx > -0.5 && nx < 0.34 && ny > -0.2 && ny < -0.2 + sw;
+        const onDiag = distToSegment(nx, ny, -0.42, -0.04, 0.3, 0.62) < sw / 2;
 
-        if (inVStroke || inTopBar || inMidBar || onDiag) {
+        if (inLeftStroke || inTopBar || inMidBar || onDiag) {
           raw[off] = 255; raw[off + 1] = 255; raw[off + 2] = 255; // white symbol
         } else {
           raw[off] = r; raw[off + 1] = g; raw[off + 2] = b; // brand color

@@ -13,7 +13,9 @@ export class BaseRepository<T extends BaseEntity> {
   }
 
   async getAllActive(): Promise<T[]> {
-    return this.table.filter(item => (item as T & { isActive?: boolean }).isActive !== false).toArray();
+    return this.table
+      .filter((item) => (item as T & { isActive?: boolean }).isActive !== false)
+      .toArray();
   }
 
   async getById(id: number): Promise<T | undefined> {

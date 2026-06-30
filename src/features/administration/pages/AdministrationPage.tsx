@@ -1,8 +1,26 @@
 import {
-  Box, Card, CardContent, Typography, TextField, MenuItem,
-  Button, IconButton, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions,
-  Tabs, Tab, Chip, Switch,
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  MenuItem,
+  Button,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tabs,
+  Tab,
+  Chip,
+  Switch,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AddIcon from '@mui/icons-material/Add';
@@ -18,25 +36,42 @@ import { ColorPicker } from '@core/components/common/ColorPicker';
 import { useSnackbar } from 'notistack';
 import {
   useGetAllCategoriesQuery,
-  useCreateCategoryMutation, useUpdateCategoryMutation, useDeleteCategoryMutation,
-  useGetTagsQuery, useCreateTagMutation, useUpdateTagMutation, useDeleteTagMutation,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+  useGetTagsQuery,
+  useCreateTagMutation,
+  useUpdateTagMutation,
+  useDeleteTagMutation,
 } from '@app/api/categoriesApi';
 import {
   useGetAllAccountTypesQuery,
-  useCreateAccountTypeMutation, useUpdateAccountTypeMutation, useDeleteAccountTypeMutation,
+  useCreateAccountTypeMutation,
+  useUpdateAccountTypeMutation,
+  useDeleteAccountTypeMutation,
 } from '@app/api/accountsApi';
 import {
   useGetAllTransactionTypesQuery,
-  useCreateTransactionTypeMutation, useUpdateTransactionTypeMutation,
+  useCreateTransactionTypeMutation,
+  useUpdateTransactionTypeMutation,
 } from '@app/api/transactionsApi';
 import {
-  useGetGoalTypesQuery, useCreateGoalTypeMutation, useUpdateGoalTypeMutation, useDeleteGoalTypeMutation,
+  useGetGoalTypesQuery,
+  useCreateGoalTypeMutation,
+  useUpdateGoalTypeMutation,
+  useDeleteGoalTypeMutation,
 } from '@app/api/goalsApi';
 import {
-  useGetLoanTypesQuery, useCreateLoanTypeMutation, useUpdateLoanTypeMutation, useDeleteLoanTypeMutation,
+  useGetLoanTypesQuery,
+  useCreateLoanTypeMutation,
+  useUpdateLoanTypeMutation,
+  useDeleteLoanTypeMutation,
 } from '@app/api/loansApi';
 import {
-  useGetAssetTypesQuery, useCreateAssetTypeMutation, useUpdateAssetTypeMutation, useDeleteAssetTypeMutation,
+  useGetAssetTypesQuery,
+  useCreateAssetTypeMutation,
+  useUpdateAssetTypeMutation,
+  useDeleteAssetTypeMutation,
 } from '@app/api/assetsApi';
 import type { Category } from '@core/database/types';
 
@@ -59,11 +94,20 @@ const categorySchema = z.object({
 });
 type CategoryForm = z.infer<typeof categorySchema>;
 
-interface GenericRow { id?: number; name: string; color?: string; isActive?: boolean; description?: string }
+interface GenericRow {
+  id?: number;
+  name: string;
+  color?: string;
+  isActive?: boolean;
+  description?: string;
+}
 
 function GenericAdmin<T extends GenericRow>({
-  title, items,
-  onCreate, onUpdate, onDelete,
+  title,
+  items,
+  onCreate,
+  onUpdate,
+  onDelete,
   withColor = false,
 }: {
   title: string;
@@ -78,7 +122,14 @@ function GenericAdmin<T extends GenericRow>({
   const [editItem, setEditItem] = useState<T | undefined>();
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<NameColorForm>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<NameColorForm>({
     resolver: zodResolver(nameColorSchema),
     defaultValues: { isActive: true, color: '#2563EB' },
   });
@@ -87,21 +138,32 @@ function GenericAdmin<T extends GenericRow>({
 
   const openForm = (item?: T) => {
     setEditItem(item);
-    reset(item ? {
-      name: item.name,
-      color: item.color || '#2563EB',
-      isActive: item.isActive ?? true,
-      description: item.description,
-    } : { isActive: true, color: '#2563EB' });
+    reset(
+      item
+        ? {
+            name: item.name,
+            color: item.color || '#2563EB',
+            isActive: item.isActive ?? true,
+            description: item.description,
+          }
+        : { isActive: true, color: '#2563EB' },
+    );
     setFormOpen(true);
   };
 
   const onSubmit = async (data: NameColorForm) => {
     try {
-      if (editItem?.id) { await onUpdate(editItem.id, data); enqueueSnackbar(`${title} updated`, { variant: 'success' }); }
-      else { await onCreate(data); enqueueSnackbar(`${title} created`, { variant: 'success' }); }
+      if (editItem?.id) {
+        await onUpdate(editItem.id, data);
+        enqueueSnackbar(`${title} updated`, { variant: 'success' });
+      } else {
+        await onCreate(data);
+        enqueueSnackbar(`${title} created`, { variant: 'success' });
+      }
       setFormOpen(false);
-    } catch { enqueueSnackbar('Failed to save', { variant: 'error' }); }
+    } catch {
+      enqueueSnackbar('Failed to save', { variant: 'error' });
+    }
   };
 
   const handleDelete = async () => {
@@ -109,7 +171,9 @@ function GenericAdmin<T extends GenericRow>({
     try {
       await onDelete(deleteId);
       enqueueSnackbar(`${title} deleted`, { variant: 'success' });
-    } catch { enqueueSnackbar('Cannot delete — item may be in use', { variant: 'warning' }); }
+    } catch {
+      enqueueSnackbar('Cannot delete — item may be in use', { variant: 'warning' });
+    }
     setDeleteId(null);
   };
 
@@ -132,16 +196,40 @@ function GenericAdmin<T extends GenericRow>({
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map(item => (
+            {items.map((item) => (
               <TableRow key={item.id} hover>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
-                    {withColor && <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: item.color || '#9E9E9E', flexShrink: 0 }} />}
-                    <Typography variant="body2" fontWeight={500}>{item.name}</Typography>
-                    {item.description && <Typography variant="caption" color="text.secondary">— {item.description}</Typography>}
+                    {withColor && (
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          bgcolor: item.color || '#9E9E9E',
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <Typography variant="body2" fontWeight={500}>
+                      {item.name}
+                    </Typography>
+                    {item.description && (
+                      <Typography variant="caption" color="text.secondary">
+                        — {item.description}
+                      </Typography>
+                    )}
                   </Box>
                 </TableCell>
-                {withColor && <TableCell><Chip label={item.color || '#9E9E9E'} size="small" sx={{ height: 18, fontSize: '0.65rem' }} /></TableCell>}
+                {withColor && (
+                  <TableCell>
+                    <Chip
+                      label={item.color || '#9E9E9E'}
+                      size="small"
+                      sx={{ height: 18, fontSize: '0.65rem' }}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <Chip
                     label={item.isActive !== false ? 'Active' : 'Inactive'}
@@ -151,8 +239,12 @@ function GenericAdmin<T extends GenericRow>({
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" onClick={() => openForm(item)}><EditIcon fontSize="small" /></IconButton>
-                  <IconButton size="small" color="error" onClick={() => setDeleteId(item.id!)}><DeleteIcon fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => openForm(item)}>
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => setDeleteId(item.id!)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -165,29 +257,54 @@ function GenericAdmin<T extends GenericRow>({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <Box display="flex" flexDirection="column" gap={2}>
-              <Controller name="name" control={control} render={({ field }) => (
-                <TextField {...field} fullWidth label="Name *" error={!!errors.name} helperText={errors.name?.message} />
-              )} />
-              <Controller name="description" control={control} render={({ field }) => (
-                <TextField {...field} fullWidth label="Description" value={field.value || ''} />
-              )} />
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Name *"
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} fullWidth label="Description" value={field.value || ''} />
+                )}
+              />
               {withColor && (
                 <Box>
-                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color</Typography>
-                  <ColorPicker value={color || '#2563EB'} onChange={v => setValue('color', v)} />
+                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                    Color
+                  </Typography>
+                  <ColorPicker value={color || '#2563EB'} onChange={(v) => setValue('color', v)} />
                 </Box>
               )}
-              <Controller name="isActive" control={control} render={({ field }) => (
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Typography variant="body2">Active</Typography>
-                  <Switch checked={!!field.value} onChange={e => field.onChange(e.target.checked)} />
-                </Box>
-              )} />
+              <Controller
+                name="isActive"
+                control={control}
+                render={({ field }) => (
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="body2">Active</Typography>
+                    <Switch
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  </Box>
+                )}
+              />
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">{editItem ? 'Update' : 'Create'}</Button>
+            <Button type="submit" variant="contained">
+              {editItem ? 'Update' : 'Create'}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -210,12 +327,19 @@ function CategoriesAdmin() {
   const [update] = useUpdateCategoryMutation();
   const [deleteCat] = useDeleteCategoryMutation();
 
-  const parentCategories = categories.filter(c => !c.parentId);
+  const parentCategories = categories.filter((c) => !c.parentId);
   const [formOpen, setFormOpen] = useState(false);
   const [editCat, setEditCat] = useState<Category | undefined>();
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CategoryForm>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CategoryForm>({
     resolver: zodResolver(categorySchema),
     defaultValues: { categoryType: 'expense' as const, isActive: true, color: '#2563EB' },
   });
@@ -223,27 +347,48 @@ function CategoriesAdmin() {
 
   const openForm = (c?: Category) => {
     setEditCat(c);
-    reset(c ? { name: c.name, parentId: c.parentId, categoryType: c.categoryType, color: c.color || '#2563EB', icon: c.icon, isActive: c.isActive } : { categoryType: 'expense' as const, isActive: true, color: '#2563EB' });
+    reset(
+      c
+        ? {
+            name: c.name,
+            parentId: c.parentId,
+            categoryType: c.categoryType,
+            color: c.color || '#2563EB',
+            icon: c.icon,
+            isActive: c.isActive,
+          }
+        : { categoryType: 'expense' as const, isActive: true, color: '#2563EB' },
+    );
     setFormOpen(true);
   };
 
   const onSubmit = async (data: CategoryForm) => {
     try {
       if (editCat?.id) {
-        await update({ id: editCat.id, data: { ...data, parentId: data.parentId ?? undefined } }).unwrap();
+        await update({
+          id: editCat.id,
+          data: { ...data, parentId: data.parentId ?? undefined },
+        }).unwrap();
         enqueueSnackbar('Category updated', { variant: 'success' });
       } else {
-        await create({ ...data, parentId: data.parentId ?? undefined } as Omit<Category, 'id' | 'createdAt' | 'updatedAt'>).unwrap();
+        await create({ ...data, parentId: data.parentId ?? undefined } as Omit<
+          Category,
+          'id' | 'createdAt' | 'updatedAt'
+        >).unwrap();
         enqueueSnackbar('Category created', { variant: 'success' });
       }
       setFormOpen(false);
-    } catch { enqueueSnackbar('Failed to save', { variant: 'error' }); }
+    } catch {
+      enqueueSnackbar('Failed to save', { variant: 'error' });
+    }
   };
 
   return (
     <Box>
       <Box display="flex" justifyContent="flex-end" mb={1}>
-        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => openForm()}>Add Category</Button>
+        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => openForm()}>
+          Add Category
+        </Button>
       </Box>
       <TableContainer>
         <Table size="small">
@@ -257,28 +402,53 @@ function CategoriesAdmin() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {categories.map(cat => (
+            {categories.map((cat) => (
               <TableRow key={cat.id} hover>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: cat.color || '#9E9E9E' }} />
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        bgcolor: cat.color || '#9E9E9E',
+                      }}
+                    />
                     <Typography variant="body2" fontWeight={500} ml={cat.parentId ? 2 : 0}>
-                      {cat.parentId ? '↳ ' : ''}{cat.name}
+                      {cat.parentId ? '↳ ' : ''}
+                      {cat.name}
                     </Typography>
                   </Box>
                 </TableCell>
-                <TableCell><Chip label={cat.categoryType} size="small" sx={{ height: 18, fontSize: '0.65rem' }} /></TableCell>
+                <TableCell>
+                  <Chip
+                    label={cat.categoryType}
+                    size="small"
+                    sx={{ height: 18, fontSize: '0.65rem' }}
+                  />
+                </TableCell>
                 <TableCell>
                   <Typography variant="caption" color="text.secondary">
-                    {cat.parentId ? categories.find(c => c.id === cat.parentId)?.name || '—' : '—'}
+                    {cat.parentId
+                      ? categories.find((c) => c.id === cat.parentId)?.name || '—'
+                      : '—'}
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip label={cat.isActive ? 'Active' : 'Inactive'} size="small" color={cat.isActive ? 'success' : 'default'} sx={{ height: 18, fontSize: '0.65rem' }} />
+                  <Chip
+                    label={cat.isActive ? 'Active' : 'Inactive'}
+                    size="small"
+                    color={cat.isActive ? 'success' : 'default'}
+                    sx={{ height: 18, fontSize: '0.65rem' }}
+                  />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" onClick={() => openForm(cat)}><EditIcon fontSize="small" /></IconButton>
-                  <IconButton size="small" color="error" onClick={() => setDeleteId(cat.id!)}><DeleteIcon fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => openForm(cat)}>
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => setDeleteId(cat.id!)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -291,39 +461,80 @@ function CategoriesAdmin() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <Box display="flex" flexDirection="column" gap={2}>
-              <Controller name="name" control={control} render={({ field }) => (
-                <TextField {...field} fullWidth label="Name *" error={!!errors.name} helperText={errors.name?.message} />
-              )} />
-              <Controller name="categoryType" control={control} render={({ field }) => (
-                <TextField {...field} select fullWidth label="Type">
-                  <MenuItem value="income">Income</MenuItem>
-                  <MenuItem value="expense">Expense</MenuItem>
-                  <MenuItem value="transfer">Transfer</MenuItem>
-                  <MenuItem value="both">Both</MenuItem>
-                </TextField>
-              )} />
-              <Controller name="parentId" control={control} render={({ field }) => (
-                <TextField {...field} select fullWidth label="Parent Category (optional)"
-                  value={field.value || ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : null)}>
-                  <MenuItem value=""><em>None (Top Level)</em></MenuItem>
-                  {parentCategories.map(c => <MenuItem key={c.id} value={c.id!}>{c.name}</MenuItem>)}
-                </TextField>
-              )} />
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Name *"
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="categoryType"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select fullWidth label="Type">
+                    <MenuItem value="income">Income</MenuItem>
+                    <MenuItem value="expense">Expense</MenuItem>
+                    <MenuItem value="transfer">Transfer</MenuItem>
+                    <MenuItem value="both">Both</MenuItem>
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="parentId"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    select
+                    fullWidth
+                    label="Parent Category (optional)"
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <MenuItem value="">
+                      <em>None (Top Level)</em>
+                    </MenuItem>
+                    {parentCategories.map((c) => (
+                      <MenuItem key={c.id} value={c.id!}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
               <Box>
-                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">Color</Typography>
-                <ColorPicker value={color || '#2563EB'} onChange={v => setValue('color', v)} />
+                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                  Color
+                </Typography>
+                <ColorPicker value={color || '#2563EB'} onChange={(v) => setValue('color', v)} />
               </Box>
-              <Controller name="isActive" control={control} render={({ field }) => (
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Typography variant="body2">Active</Typography>
-                  <Switch checked={!!field.value} onChange={e => field.onChange(e.target.checked)} />
-                </Box>
-              )} />
+              <Controller
+                name="isActive"
+                control={control}
+                render={({ field }) => (
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="body2">Active</Typography>
+                    <Switch
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  </Box>
+                )}
+              />
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">{editCat ? 'Update' : 'Create'}</Button>
+            <Button type="submit" variant="contained">
+              {editCat ? 'Update' : 'Create'}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -332,7 +543,11 @@ function CategoriesAdmin() {
         open={deleteId !== null}
         title="Delete Category"
         message="Delete this category? Transactions using it will lose category association."
-        onConfirm={async () => { await deleteCat(deleteId!); enqueueSnackbar('Category deleted', { variant: 'success' }); setDeleteId(null); }}
+        onConfirm={async () => {
+          await deleteCat(deleteId!);
+          enqueueSnackbar('Category deleted', { variant: 'success' });
+          setDeleteId(null);
+        }}
         onCancel={() => setDeleteId(null)}
       />
     </Box>
@@ -340,8 +555,13 @@ function CategoriesAdmin() {
 }
 
 const TABS = [
-  'Categories', 'Account Types', 'Transaction Types',
-  'Goal Types', 'Loan Types', 'Asset Types', 'Tags',
+  'Categories',
+  'Account Types',
+  'Transaction Types',
+  'Goal Types',
+  'Loan Types',
+  'Asset Types',
+  'Tags',
 ];
 
 export function AdministrationPage() {
@@ -392,7 +612,9 @@ export function AdministrationPage() {
             variant="scrollable"
             scrollButtons="auto"
           >
-            {TABS.map(t => <Tab key={t} label={t} />)}
+            {TABS.map((t) => (
+              <Tab key={t} label={t} />
+            ))}
           </Tabs>
         </Box>
         <CardContent>
@@ -402,9 +624,15 @@ export function AdministrationPage() {
             <GenericAdmin
               title="Account Type"
               items={accountTypes}
-              onCreate={async data => { await createAT(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateAT({ id, data: data as never }).unwrap(); }}
-              onDelete={async id => { await deleteAT(id).unwrap(); }}
+              onCreate={async (data) => {
+                await createAT(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateAT({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async (id) => {
+                await deleteAT(id).unwrap();
+              }}
             />
           )}
 
@@ -412,9 +640,15 @@ export function AdministrationPage() {
             <GenericAdmin
               title="Transaction Type"
               items={txTypes}
-              onCreate={async data => { await createTT(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateTT({ id, data: data as never }).unwrap(); }}
-              onDelete={async () => { /* soft delete via update */ }}
+              onCreate={async (data) => {
+                await createTT(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateTT({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async () => {
+                /* soft delete via update */
+              }}
             />
           )}
 
@@ -422,9 +656,15 @@ export function AdministrationPage() {
             <GenericAdmin
               title="Goal Type"
               items={goalTypes}
-              onCreate={async data => { await createGT(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateGT({ id, data: data as never }).unwrap(); }}
-              onDelete={async id => { await deleteGT(id).unwrap(); }}
+              onCreate={async (data) => {
+                await createGT(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateGT({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async (id) => {
+                await deleteGT(id).unwrap();
+              }}
             />
           )}
 
@@ -432,9 +672,15 @@ export function AdministrationPage() {
             <GenericAdmin
               title="Loan Type"
               items={loanTypes}
-              onCreate={async data => { await createLT(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateLT({ id, data: data as never }).unwrap(); }}
-              onDelete={async id => { await deleteLT(id).unwrap(); }}
+              onCreate={async (data) => {
+                await createLT(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateLT({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async (id) => {
+                await deleteLT(id).unwrap();
+              }}
             />
           )}
 
@@ -442,9 +688,15 @@ export function AdministrationPage() {
             <GenericAdmin
               title="Asset Type"
               items={assetTypes}
-              onCreate={async data => { await createAsT(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateAsT({ id, data: data as never }).unwrap(); }}
-              onDelete={async id => { await deleteAsT(id).unwrap(); }}
+              onCreate={async (data) => {
+                await createAsT(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateAsT({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async (id) => {
+                await deleteAsT(id).unwrap();
+              }}
             />
           )}
 
@@ -453,9 +705,15 @@ export function AdministrationPage() {
               title="Tag"
               items={tags}
               withColor
-              onCreate={async data => { await createTag(data as never).unwrap(); }}
-              onUpdate={async (id, data) => { await updateTag({ id, data: data as never }).unwrap(); }}
-              onDelete={async id => { await deleteTag(id).unwrap(); }}
+              onCreate={async (data) => {
+                await createTag(data as never).unwrap();
+              }}
+              onUpdate={async (id, data) => {
+                await updateTag({ id, data: data as never }).unwrap();
+              }}
+              onDelete={async (id) => {
+                await deleteTag(id).unwrap();
+              }}
             />
           )}
         </CardContent>

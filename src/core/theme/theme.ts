@@ -75,9 +75,12 @@ const baseComponents = {
 };
 
 export function createAppTheme(mode: ThemeMode = 'light'): Theme {
-  const resolvedMode = mode === 'system'
-    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : mode;
+  const resolvedMode =
+    mode === 'system'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+      : mode;
 
   if (resolvedMode === 'dark') {
     return createTheme({

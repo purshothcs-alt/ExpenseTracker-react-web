@@ -1,8 +1,24 @@
 import {
-  Box, Button, Card, CardContent, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, TablePagination, TextField,
-  MenuItem, Chip, IconButton, Tooltip, Checkbox, Typography,
-  InputAdornment, Skeleton,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
+  MenuItem,
+  Chip,
+  IconButton,
+  Tooltip,
+  Checkbox,
+  Typography,
+  InputAdornment,
+  Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,8 +34,10 @@ import { EmptyState } from '@core/components/common/EmptyState';
 import { ConfirmDialog } from '@core/components/common/ConfirmDialog';
 import { TransactionForm } from '../components/TransactionForm';
 import {
-  useGetTransactionsQuery, useDeleteTransactionMutation,
-  useBulkDeleteTransactionsMutation, useDuplicateTransactionMutation,
+  useGetTransactionsQuery,
+  useDeleteTransactionMutation,
+  useBulkDeleteTransactionsMutation,
+  useDuplicateTransactionMutation,
   useGetTransactionTypesQuery,
 } from '@app/api/transactionsApi';
 import { useGetAccountsQuery } from '@app/api/accountsApi';
@@ -50,16 +68,19 @@ export function TransactionsPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const filter: TransactionFilter = useMemo(() => ({
-    search: debouncedSearch || undefined,
-    transactionTypeId: filterType ? Number(filterType) : undefined,
-    accountId: filterAccount ? Number(filterAccount) : undefined,
-    startDate: filterStart || undefined,
-    endDate: filterEnd || undefined,
-    page: page + 1,
-    pageSize,
-    sortOrder: 'desc',
-  }), [debouncedSearch, filterType, filterAccount, filterStart, filterEnd, page, pageSize]);
+  const filter: TransactionFilter = useMemo(
+    () => ({
+      search: debouncedSearch || undefined,
+      transactionTypeId: filterType ? Number(filterType) : undefined,
+      accountId: filterAccount ? Number(filterAccount) : undefined,
+      startDate: filterStart || undefined,
+      endDate: filterEnd || undefined,
+      page: page + 1,
+      pageSize,
+      sortOrder: 'desc',
+    }),
+    [debouncedSearch, filterType, filterAccount, filterStart, filterEnd, page, pageSize],
+  );
 
   const { data: result, isLoading } = useGetTransactionsQuery(filter);
   const { data: txTypes = [] } = useGetTransactionTypesQuery();
@@ -72,9 +93,9 @@ export function TransactionsPage() {
   const transactions = result?.data || [];
   const total = result?.total || 0;
 
-  const catMap = useMemo(() => new Map(categories.map(c => [c.id!, c])), [categories]);
-  const typeMap = useMemo(() => new Map(txTypes.map(t => [t.id!, t])), [txTypes]);
-  const accMap = useMemo(() => new Map(accounts.map(a => [a.id!, a])), [accounts]);
+  const catMap = useMemo(() => new Map(categories.map((c) => [c.id!, c])), [categories]);
+  const typeMap = useMemo(() => new Map(txTypes.map((t) => [t.id!, t])), [txTypes]);
+  const accMap = useMemo(() => new Map(accounts.map((a) => [a.id!, a])), [accounts]);
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
@@ -99,9 +120,21 @@ export function TransactionsPage() {
     exportToCSV(
       [
         { header: 'Date', key: 'transactionDate' as never },
-        { header: 'Type', key: 'transactionTypeId' as never, format: (v: unknown) => typeMap.get(v as number)?.name || '' },
-        { header: 'Account', key: 'accountId' as never, format: (v: unknown) => accMap.get(v as number)?.name || '' },
-        { header: 'Category', key: 'categoryId' as never, format: (v: unknown) => catMap.get(v as number)?.name || '' },
+        {
+          header: 'Type',
+          key: 'transactionTypeId' as never,
+          format: (v: unknown) => typeMap.get(v as number)?.name || '',
+        },
+        {
+          header: 'Account',
+          key: 'accountId' as never,
+          format: (v: unknown) => accMap.get(v as number)?.name || '',
+        },
+        {
+          header: 'Category',
+          key: 'categoryId' as never,
+          format: (v: unknown) => catMap.get(v as number)?.name || '',
+        },
         { header: 'Amount', key: 'amount' as never, format: (v: unknown) => String(v) },
         { header: 'Notes', key: 'notes' as never },
       ],
@@ -115,9 +148,21 @@ export function TransactionsPage() {
       'Transactions',
       [
         { header: 'Date', key: 'transactionDate' as never },
-        { header: 'Type', key: 'transactionTypeId' as never, format: (v: unknown) => typeMap.get(v as number)?.name || '' },
-        { header: 'Account', key: 'accountId' as never, format: (v: unknown) => accMap.get(v as number)?.name || '' },
-        { header: 'Category', key: 'categoryId' as never, format: (v: unknown) => catMap.get(v as number)?.name || '' },
+        {
+          header: 'Type',
+          key: 'transactionTypeId' as never,
+          format: (v: unknown) => typeMap.get(v as number)?.name || '',
+        },
+        {
+          header: 'Account',
+          key: 'accountId' as never,
+          format: (v: unknown) => accMap.get(v as number)?.name || '',
+        },
+        {
+          header: 'Category',
+          key: 'categoryId' as never,
+          format: (v: unknown) => catMap.get(v as number)?.name || '',
+        },
         { header: 'Amount', key: 'amount' as never, format: (v: unknown) => String(v) },
         { header: 'Notes', key: 'notes' as never },
       ],
@@ -128,10 +173,10 @@ export function TransactionsPage() {
 
   const isAllSelected = transactions.length > 0 && selectedIds.length === transactions.length;
   const toggleSelectAll = () => {
-    setSelectedIds(isAllSelected ? [] : transactions.map(t => t.id!));
+    setSelectedIds(isAllSelected ? [] : transactions.map((t) => t.id!));
   };
   const toggleSelect = (id: number) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
   };
 
   return (
@@ -143,13 +188,39 @@ export function TransactionsPage() {
         actions={
           <Box display="flex" gap={1}>
             {selectedIds.length > 0 && (
-              <Button variant="outlined" color="error" onClick={() => setBulkDeleteConfirm(true)} size="small">
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => setBulkDeleteConfirm(true)}
+                size="small"
+              >
                 Delete ({selectedIds.length})
               </Button>
             )}
-            <Button variant="outlined" startIcon={<FileDownloadIcon />} size="small" onClick={handleExportCSV}>CSV</Button>
-            <Button variant="outlined" startIcon={<FileDownloadIcon />} size="small" onClick={handleExportExcel}>Excel</Button>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditTx(undefined); setFormOpen(true); }}>
+            <Button
+              variant="outlined"
+              startIcon={<FileDownloadIcon />}
+              size="small"
+              onClick={handleExportCSV}
+            >
+              CSV
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<FileDownloadIcon />}
+              size="small"
+              onClick={handleExportExcel}
+            >
+              Excel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditTx(undefined);
+                setFormOpen(true);
+              }}
+            >
               Add Transaction
             </Button>
           </Box>
@@ -163,40 +234,78 @@ export function TransactionsPage() {
               size="small"
               placeholder="Search transactions..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
               sx={{ minWidth: 240 }}
             />
             <TextField
-              size="small" select label="Type"
-              value={filterType} onChange={e => setFilterType(e.target.value)}
+              size="small"
+              select
+              label="Type"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
               sx={{ minWidth: 160 }}
             >
-              <MenuItem value=""><em>All Types</em></MenuItem>
-              {txTypes.map(t => <MenuItem key={t.id} value={t.id!}>{t.name}</MenuItem>)}
+              <MenuItem value="">
+                <em>All Types</em>
+              </MenuItem>
+              {txTypes.map((t) => (
+                <MenuItem key={t.id} value={t.id!}>
+                  {t.name}
+                </MenuItem>
+              ))}
             </TextField>
             <TextField
-              size="small" select label="Account"
-              value={filterAccount} onChange={e => setFilterAccount(e.target.value)}
+              size="small"
+              select
+              label="Account"
+              value={filterAccount}
+              onChange={(e) => setFilterAccount(e.target.value)}
               sx={{ minWidth: 160 }}
             >
-              <MenuItem value=""><em>All Accounts</em></MenuItem>
-              {accounts.map(a => <MenuItem key={a.id} value={a.id!}>{a.name}</MenuItem>)}
+              <MenuItem value="">
+                <em>All Accounts</em>
+              </MenuItem>
+              {accounts.map((a) => (
+                <MenuItem key={a.id} value={a.id!}>
+                  {a.name}
+                </MenuItem>
+              ))}
             </TextField>
             <TextField
-              size="small" type="date" label="From"
+              size="small"
+              type="date"
+              label="From"
               InputLabelProps={{ shrink: true }}
-              value={filterStart} onChange={e => { setFilterStart(e.target.value); setPage(0); }}
+              value={filterStart}
+              onChange={(e) => {
+                setFilterStart(e.target.value);
+                setPage(0);
+              }}
               sx={{ width: 160 }}
             />
             <TextField
-              size="small" type="date" label="To"
+              size="small"
+              type="date"
+              label="To"
               InputLabelProps={{ shrink: true }}
-              value={filterEnd} onChange={e => { setFilterEnd(e.target.value); setPage(0); }}
+              value={filterEnd}
+              onChange={(e) => {
+                setFilterEnd(e.target.value);
+                setPage(0);
+              }}
               sx={{ width: 160 }}
             />
             <Tooltip title="More Filters">
-              <IconButton size="small"><FilterListIcon /></IconButton>
+              <IconButton size="small">
+                <FilterListIcon />
+              </IconButton>
             </Tooltip>
           </Box>
         </CardContent>
@@ -208,7 +317,12 @@ export function TransactionsPage() {
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">
-                  <Checkbox size="small" checked={isAllSelected} indeterminate={selectedIds.length > 0 && !isAllSelected} onChange={toggleSelectAll} />
+                  <Checkbox
+                    size="small"
+                    checked={isAllSelected}
+                    indeterminate={selectedIds.length > 0 && !isAllSelected}
+                    onChange={toggleSelectAll}
+                  />
                 </TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
@@ -224,18 +338,23 @@ export function TransactionsPage() {
                 Array.from({ length: 10 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 8 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton variant="text" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton variant="text" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : transactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8}>
-                    <EmptyState title="No transactions found" description="Try adjusting your filters or add a new transaction." />
+                    <EmptyState
+                      title="No transactions found"
+                      description="Try adjusting your filters or add a new transaction."
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
-                transactions.map(tx => {
+                transactions.map((tx) => {
                   const txType = typeMap.get(tx.transactionTypeId);
                   const account = accMap.get(tx.accountId);
                   const category = tx.categoryId ? catMap.get(tx.categoryId) : undefined;
@@ -245,14 +364,26 @@ export function TransactionsPage() {
                   return (
                     <TableRow key={tx.id} hover selected={selectedIds.includes(tx.id!)}>
                       <TableCell padding="checkbox">
-                        <Checkbox size="small" checked={selectedIds.includes(tx.id!)} onChange={() => toggleSelect(tx.id!)} />
+                        <Checkbox
+                          size="small"
+                          checked={selectedIds.includes(tx.id!)}
+                          onChange={() => toggleSelect(tx.id!)}
+                        />
                       </TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{formatDate(tx.transactionDate)}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                        {formatDate(tx.transactionDate)}
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={txType?.name || '—'}
                           size="small"
-                          sx={{ height: 20, fontSize: '0.7rem', bgcolor: `${txType?.color || '#9E9E9E'}15`, color: txType?.color, border: 'none' }}
+                          sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
+                            bgcolor: `${txType?.color || '#9E9E9E'}15`,
+                            color: txType?.color,
+                            border: 'none',
+                          }}
                         />
                       </TableCell>
                       <TableCell>
@@ -260,11 +391,17 @@ export function TransactionsPage() {
                       </TableCell>
                       <TableCell>
                         {category && (
-                          <Chip label={category.name} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
+                          <Chip
+                            label={category.name}
+                            size="small"
+                            sx={{ height: 18, fontSize: '0.65rem' }}
+                          />
                         )}
                       </TableCell>
                       <TableCell sx={{ maxWidth: 200 }}>
-                        <Typography variant="caption" noWrap display="block">{tx.notes || tx.vendor || '—'}</Typography>
+                        <Typography variant="caption" noWrap display="block">
+                          {tx.notes || tx.vendor || '—'}
+                        </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography
@@ -272,13 +409,20 @@ export function TransactionsPage() {
                           fontWeight={700}
                           color={isDebit ? 'error.main' : isTransfer ? 'info.main' : 'success.main'}
                         >
-                          {isDebit ? '-' : '+'}{formatCurrency(tx.amount)}
+                          {isDebit ? '-' : '+'}
+                          {formatCurrency(tx.amount)}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
                         <Box display="flex" justifyContent="center">
                           <Tooltip title="Edit">
-                            <IconButton size="small" onClick={() => { setEditTx(tx); setFormOpen(true); }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setEditTx(tx);
+                                setFormOpen(true);
+                              }}
+                            >
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -288,7 +432,11 @@ export function TransactionsPage() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Delete">
-                            <IconButton size="small" color="error" onClick={() => setDeleteConfirm(tx.id!)}>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => setDeleteConfirm(tx.id!)}
+                            >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -307,7 +455,10 @@ export function TransactionsPage() {
           page={page}
           onPageChange={(_, p) => setPage(p)}
           rowsPerPage={pageSize}
-          onRowsPerPageChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}
+          onRowsPerPageChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPage(0);
+          }}
           rowsPerPageOptions={[10, 20, 50, 100]}
         />
       </Card>

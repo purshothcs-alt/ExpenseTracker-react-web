@@ -1,4 +1,11 @@
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 interface Props {
@@ -14,9 +21,15 @@ interface Props {
 }
 
 export function ConfirmDialog({
-  open, title, message, onConfirm, onCancel,
-  confirmLabel = 'Confirm', cancelLabel = 'Cancel',
-  confirmColor = 'error', loading = false,
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  confirmColor = 'error',
+  loading = false,
 }: Props) {
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
@@ -28,7 +41,9 @@ export function ConfirmDialog({
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onCancel} disabled={loading}>{cancelLabel}</Button>
+        <Button onClick={onCancel} disabled={loading}>
+          {cancelLabel}
+        </Button>
         <Button
           variant="contained"
           color={confirmColor}

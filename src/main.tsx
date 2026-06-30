@@ -32,6 +32,6 @@ init().then(() => {
           </BrowserRouter>
         </AppThemeProvider>
       </Provider>
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 });

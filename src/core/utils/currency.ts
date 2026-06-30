@@ -2,10 +2,18 @@ import type { AppSettings } from '@core/database/types';
 
 export function formatCurrency(
   amount: number,
-  settings: Pick<AppSettings, 'currencySymbol' | 'decimalSeparator' | 'thousandSeparator' | 'showCents'>,
+  settings: Pick<
+    AppSettings,
+    'currencySymbol' | 'decimalSeparator' | 'thousandSeparator' | 'showCents'
+  >,
   showCents = true,
 ): string {
-  const { currencySymbol = '₹', decimalSeparator = '.', thousandSeparator = ',', showCents: showCentsSetting } = settings;
+  const {
+    currencySymbol = '₹',
+    decimalSeparator = '.',
+    thousandSeparator = ',',
+    showCents: showCentsSetting,
+  } = settings;
   const displayCents = showCents && showCentsSetting !== false;
   const abs = Math.abs(amount);
   const [intPart, decPart] = abs.toFixed(displayCents ? 2 : 0).split('.');
@@ -15,7 +23,10 @@ export function formatCurrency(
   return `${sign}${currencySymbol}${formatted}${decimal}`;
 }
 
-export function parseCurrency(value: string, settings?: Pick<AppSettings, 'currencySymbol' | 'thousandSeparator' | 'decimalSeparator'>): number {
+export function parseCurrency(
+  value: string,
+  settings?: Pick<AppSettings, 'currencySymbol' | 'thousandSeparator' | 'decimalSeparator'>,
+): number {
   if (!settings) return parseFloat(value.replace(/[^0-9.-]/g, '')) || 0;
   const clean = value
     .replace(settings.currencySymbol, '')

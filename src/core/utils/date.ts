@@ -5,7 +5,11 @@ export function formatDate(date: string | Date | null | undefined, format = 'DD/
   return dayjs(date).format(format);
 }
 
-export function formatDateTime(date: string | Date | null | undefined, dateFormat = 'DD/MM/YYYY', timeFormat = 'HH:mm'): string {
+export function formatDateTime(
+  date: string | Date | null | undefined,
+  dateFormat = 'DD/MM/YYYY',
+  timeFormat = 'HH:mm',
+): string {
   if (!date) return '-';
   return dayjs(date).format(`${dateFormat} ${timeFormat}`);
 }

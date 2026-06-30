@@ -35,7 +35,9 @@ const initialState: SettingsState = {
 export const loadSettings = createAsyncThunk('settings/load', async () => {
   const rows = await db.settings.toArray();
   const map: Record<string, string> = {};
-  rows.forEach(r => { map[r.key] = r.value; });
+  rows.forEach((r) => {
+    map[r.key] = r.value;
+  });
 
   return {
     appName: map.appName || defaultSettings.appName,
@@ -77,14 +79,18 @@ const settingsSlice = createSlice({
       (state.settings[action.payload.key] as AppSettings[K]) = action.payload.value;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
-      .addCase(loadSettings.pending, state => { state.loading = true; })
+      .addCase(loadSettings.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(loadSettings.fulfilled, (state, action) => {
         state.settings = action.payload;
         state.loading = false;
       })
-      .addCase(loadSettings.rejected, state => { state.loading = false; })
+      .addCase(loadSettings.rejected, (state) => {
+        state.loading = false;
+      })
       .addCase(saveSetting.fulfilled, (state, action) => {
         const { key, value } = action.payload;
         if (key in state.settings) {

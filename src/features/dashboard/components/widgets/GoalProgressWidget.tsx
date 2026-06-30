@@ -11,13 +11,19 @@ export function GoalProgressWidget() {
   return (
     <Card sx={{ height: '100%' }}>
       <CardContent>
-        <Typography variant="subtitle1" fontWeight={600} mb={2}>Goal Progress</Typography>
+        <Typography variant="subtitle1" fontWeight={600} mb={2}>
+          Goal Progress
+        </Typography>
         {isLoading ? (
-          <Typography color="text.secondary" variant="body2">Loading...</Typography>
+          <Typography color="text.secondary" variant="body2">
+            Loading...
+          </Typography>
         ) : goals.length === 0 ? (
-          <Typography color="text.secondary" variant="body2">No active goals</Typography>
+          <Typography color="text.secondary" variant="body2">
+            No active goals
+          </Typography>
         ) : (
-          goals.slice(0, 5).map(goal => {
+          goals.slice(0, 5).map((goal) => {
             const pct = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
             const days = daysUntil(goal.targetDate);
             const color = pct >= 100 ? '#059669' : days < 30 ? '#DC2626' : '#2563EB';
@@ -29,8 +35,12 @@ export function GoalProgressWidget() {
                   </Avatar>
                   <Box flex={1}>
                     <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2" fontWeight={600}>{goal.goalName}</Typography>
-                      <Typography variant="caption" fontWeight={700} color={color}>{pct.toFixed(0)}%</Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {goal.goalName}
+                      </Typography>
+                      <Typography variant="caption" fontWeight={700} color={color}>
+                        {pct.toFixed(0)}%
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -38,7 +48,8 @@ export function GoalProgressWidget() {
                   variant="determinate"
                   value={Math.min(pct, 100)}
                   sx={{
-                    height: 5, borderRadius: 3,
+                    height: 5,
+                    borderRadius: 3,
                     bgcolor: `${color}20`,
                     '& .MuiLinearProgress-bar': { bgcolor: color, borderRadius: 3 },
                   }}

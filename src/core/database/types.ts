@@ -1,7 +1,30 @@
 export type CategoryType = 'income' | 'expense' | 'both' | 'transfer';
 export type TransactionDirection = 'debit' | 'credit' | 'transfer';
-export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
-export type DynamicFieldType = 'text' | 'textarea' | 'number' | 'currency' | 'percentage' | 'date' | 'datetime' | 'boolean' | 'select' | 'multiselect' | 'rating' | 'url' | 'email' | 'phone' | 'checkbox' | 'radio' | 'file';
+export type RecurringFrequency =
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'half-yearly'
+  | 'yearly';
+export type DynamicFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'currency'
+  | 'percentage'
+  | 'date'
+  | 'datetime'
+  | 'boolean'
+  | 'select'
+  | 'multiselect'
+  | 'rating'
+  | 'url'
+  | 'email'
+  | 'phone'
+  | 'checkbox'
+  | 'radio'
+  | 'file';
 export type EntityType = 'transaction' | 'account' | 'goal' | 'asset' | 'project';
 export type AuditAction = 'create' | 'update' | 'delete' | 'activate' | 'deactivate';
 export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';

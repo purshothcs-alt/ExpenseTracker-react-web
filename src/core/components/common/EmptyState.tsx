@@ -23,12 +23,14 @@ export function EmptyState({ title, description, icon, action }: Props) {
       gap={2}
       textAlign="center"
     >
-      <Box sx={{ color: 'text.disabled', '& svg': { fontSize: 72 } }}>
-        {icon || <InboxIcon />}
-      </Box>
-      <Typography variant="h6" color="text.secondary" fontWeight={600}>{title}</Typography>
+      <Box sx={{ color: 'text.disabled', '& svg': { fontSize: 72 } }}>{icon || <InboxIcon />}</Box>
+      <Typography variant="h6" color="text.secondary" fontWeight={600}>
+        {title}
+      </Typography>
       {description && (
-        <Typography variant="body2" color="text.disabled" maxWidth={400}>{description}</Typography>
+        <Typography variant="body2" color="text.disabled" maxWidth={400}>
+          {description}
+        </Typography>
       )}
       {action && (
         <Button variant="contained" onClick={action.onClick} sx={{ mt: 1 }}>

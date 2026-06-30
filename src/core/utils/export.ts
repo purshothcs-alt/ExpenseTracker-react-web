@@ -21,9 +21,9 @@ export function exportToPDF<T extends object>(
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
 
-  const headers = columns.map(c => c.header);
-  const rows = data.map(row =>
-    columns.map(col => {
+  const headers = columns.map((c) => c.header);
+  const rows = data.map((row) =>
+    columns.map((col) => {
       const val = row[col.key];
       return col.format ? col.format(val, row) : String(val ?? '');
     }),
@@ -47,9 +47,9 @@ export function exportToExcel<T extends object>(
   data: T[],
   filename = 'report',
 ): void {
-  const rows = data.map(row => {
+  const rows = data.map((row) => {
     const obj: Record<string, string> = {};
-    columns.forEach(col => {
+    columns.forEach((col) => {
       const val = row[col.key];
       obj[col.header] = col.format ? col.format(val, row) : String(val ?? '');
     });
@@ -57,7 +57,7 @@ export function exportToExcel<T extends object>(
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  const colWidths = columns.map(c => ({ wch: c.width || Math.max(c.header.length, 12) }));
+  const colWidths = columns.map((c) => ({ wch: c.width || Math.max(c.header.length, 12) }));
   ws['!cols'] = colWidths;
 
   const wb = XLSX.utils.book_new();
@@ -71,10 +71,10 @@ export function exportToCSV<T extends object>(
   data: T[],
   filename = 'report',
 ): void {
-  const headers = columns.map(c => `"${c.header}"`).join(',');
-  const rows = data.map(row =>
+  const headers = columns.map((c) => `"${c.header}"`).join(',');
+  const rows = data.map((row) =>
     columns
-      .map(col => {
+      .map((col) => {
         const val = row[col.key];
         const str = col.format ? col.format(val, row) : String(val ?? '');
         return `"${str.replace(/"/g, '""')}"`;
@@ -97,14 +97,16 @@ export function parseCSVFile(file: File): Promise<Record<string, string>[]> {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(l => l.trim());
-        const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
-        const data = lines.slice(1).map(line => {
-          const vals = line.split(',').map(v => v.replace(/^"|"$/g, '').trim());
+        const lines = text.split('\n').filter((l) => l.trim());
+        const headers = lines[0].split(',').map((h) => h.replace(/^"|"$/g, '').trim());
+        const data = lines.slice(1).map((line) => {
+          const vals = line.split(',').map((v) => v.replace(/^"|"$/g, '').trim());
           return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']));
         });
         resolve(data);
-      } catch (err) { reject(err); }
+      } catch (err) {
+        reject(err);
+      }
     };
     reader.onerror = () => reject(new Error('File read error'));
     reader.readAsText(file);
