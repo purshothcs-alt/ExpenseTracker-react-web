@@ -26,9 +26,11 @@ import {
   useUpdateTransactionMutation,
 } from '@app/api/transactionsApi';
 import { useAppSettings } from '@core/hooks/useAppSettings';
-import type { Transaction, Tag } from '@core/database/types';
+import type { Transaction, Tag, CategoryType } from '@core/database/types';
 import { useSnackbar } from 'notistack';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import AddIcon from '@mui/icons-material/Add';
+import { QuickAddCategoryDialog } from './QuickAddCategoryDialog';
 
 interface Props {
   open: boolean;
@@ -48,11 +50,14 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const { enqueueSnackbar } = useSnackbar();
   const isLoading = creating || updating;
 
+  const [quickAddCategoryOpen, setQuickAddCategoryOpen] = useState(false);
+
   const {
     control,
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -78,6 +83,8 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const selectedTypeId = watch('transactionTypeId');
   const selectedType = txTypes.find((t) => t.id === selectedTypeId);
   const isTransfer = selectedType?.direction === 'transfer';
+
+  const newCategoryType: CategoryType = selectedType?.direction === 'credit' ? 'income' : 'expense';
 
   const parentCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
   const selectedCategoryId = watch('categoryId');
@@ -259,9 +266,13 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                         fullWidth
                         label="Category"
                         value={field.value || ''}
-                        onChange={(e) =>
-                          field.onChange(e.target.value ? Number(e.target.value) : null)
-                        }
+                        onChange={(e) => {
+                          if (e.target.value === '__add_new__') {
+                            setQuickAddCategoryOpen(true);
+                            return;
+                          }
+                          field.onChange(e.target.value ? Number(e.target.value) : null);
+                        }}
                       >
                         <MenuItem value="">
                           <em>None</em>
@@ -276,6 +287,16 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                             </Box>
                           </MenuItem>
                         ))}
+                        <Divider />
+                        <MenuItem
+                          value="__add_new__"
+                          sx={{ color: 'primary.main', fontWeight: 600 }}
+                        >
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <AddIcon fontSize="small" />
+                            Add New Category
+                          </Box>
+                        </MenuItem>
                       </TextField>
                     )}
                   />
@@ -433,6 +454,13 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
           </Button>
         </DialogActions>
       </form>
+
+      <QuickAddCategoryDialog
+        open={quickAddCategoryOpen}
+        onClose={() => setQuickAddCategoryOpen(false)}
+        categoryType={newCategoryType}
+        onCreated={(id) => setValue('categoryId', id)}
+      />
     </Dialog>
   );
 }

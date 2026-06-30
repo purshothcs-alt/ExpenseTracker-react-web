@@ -1,4 +1,5 @@
 import { createTheme, type Theme } from '@mui/material/styles';
+import Zoom from '@mui/material/Zoom';
 import type { ThemeMode } from '@core/database/types';
 
 const baseTypography = {
@@ -20,16 +21,26 @@ const baseTypography = {
 const baseShape = { borderRadius: 10 };
 
 const baseComponents = {
+  MuiCssBaseline: {
+    styleOverrides: {
+      body: {
+        transition: 'background-color 0.25s ease, color 0.25s ease',
+      },
+    },
+  },
   MuiButton: {
     styleOverrides: {
       root: {
         borderRadius: 8,
         padding: '8px 20px',
         boxShadow: 'none',
-        '&:hover': { boxShadow: 'none' },
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+        '&:hover': { boxShadow: 'none', transform: 'translateY(-1px)' },
+        '&:active': { transform: 'translateY(0)' },
       },
       contained: {
-        '&:active': { boxShadow: 'none' },
+        '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)', transform: 'translateY(-1px)' },
+        '&:active': { boxShadow: 'none', transform: 'translateY(0)' },
       },
     },
   },
@@ -44,6 +55,49 @@ const baseComponents = {
   MuiPaper: {
     styleOverrides: {
       root: { borderRadius: 12 },
+    },
+  },
+  MuiDialog: {
+    defaultProps: {
+      TransitionComponent: Zoom,
+    },
+    styleOverrides: {
+      paper: {
+        borderRadius: 16,
+        boxShadow: '0 24px 48px rgba(0,0,0,0.18), 0 8px 16px rgba(0,0,0,0.08)',
+      },
+    },
+  },
+  MuiBackdrop: {
+    styleOverrides: {
+      root: { backdropFilter: 'blur(2px)' },
+    },
+  },
+  MuiMenu: {
+    defaultProps: {
+      transitionDuration: 180,
+    },
+    styleOverrides: {
+      paper: {
+        borderRadius: 10,
+        boxShadow: '0 12px 28px rgba(0,0,0,0.16), 0 4px 8px rgba(0,0,0,0.06)',
+      },
+    },
+  },
+  MuiPopover: {
+    defaultProps: {
+      transitionDuration: 180,
+    },
+    styleOverrides: {
+      paper: { borderRadius: 10 },
+    },
+  },
+  MuiTooltip: {
+    defaultProps: {
+      arrow: true,
+    },
+    styleOverrides: {
+      tooltip: { borderRadius: 6, fontSize: '0.7rem' },
     },
   },
   MuiTextField: {
@@ -64,7 +118,7 @@ const baseComponents = {
   },
   MuiListItemButton: {
     styleOverrides: {
-      root: { borderRadius: 8 },
+      root: { borderRadius: 8, transition: 'background-color 0.15s ease' },
     },
   },
   MuiLinearProgress: {

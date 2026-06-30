@@ -15,6 +15,8 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  LinearProgress,
+  Fade,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -26,6 +28,7 @@ import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { toggleSidebar } from '@app/uiSlice';
 import { saveSetting } from '@app/settingsSlice';
 import { useInstallPrompt } from '@core/hooks/useInstallPrompt';
+import { useApiLoading } from '@core/hooks/useApiLoading';
 
 const DRAWER_WIDTH = 260;
 
@@ -41,6 +44,7 @@ export function TopBar({ open }: Props) {
   const { themeMode, appName } = useAppSelector((s) => s.settings.settings);
   const { canInstall, showIosInstructions, promptInstall } = useInstallPrompt();
   const [iosDialogOpen, setIosDialogOpen] = useState(false);
+  const apiLoading = useApiLoading();
 
   const handleThemeToggle = () => {
     const next = themeMode === 'dark' ? 'light' : 'dark';
@@ -118,6 +122,10 @@ export function TopBar({ open }: Props) {
           </IconButton>
         </Tooltip>
       </Toolbar>
+
+      <Fade in={apiLoading} unmountOnExit>
+        <LinearProgress sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }} />
+      </Fade>
 
       <Dialog open={iosDialogOpen} onClose={() => setIosDialogOpen(false)}>
         <DialogTitle>{t('pwa.iosInstallTitle')}</DialogTitle>
