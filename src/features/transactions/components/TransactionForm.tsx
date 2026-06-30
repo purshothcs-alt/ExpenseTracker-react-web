@@ -13,6 +13,8 @@ import {
   InputAdornment,
   Divider,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,6 +41,8 @@ interface Props {
 }
 
 export function TransactionForm({ open, onClose, transaction }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { data: accounts = [] } = useGetAccountsQuery();
   const { data: categories = [] } = useGetAllCategoriesQuery();
   const { data: txTypes = [] } = useGetTransactionTypesQuery();
@@ -131,7 +135,8 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      fullScreen={isMobile}
+      PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
     >
       <DialogTitle fontWeight={700}>
         {transaction?.id ? 'Edit Transaction' : 'New Transaction'}
