@@ -293,7 +293,7 @@ export function AccountsPage() {
                       type="number"
                       fullWidth
                       label="Opening Balance"
-                      value={field.value ?? 0}
+                      value={field.value || ''}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                     />
                   )}
