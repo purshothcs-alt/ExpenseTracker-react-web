@@ -17,11 +17,12 @@ import {
   Button,
   LinearProgress,
   Fade,
+  Popover,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
+import PaletteIcon from '@mui/icons-material/Palette';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
+import CheckIcon from '@mui/icons-material/Check';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { toggleSidebar } from '@app/uiSlice';
@@ -29,6 +30,8 @@ import { saveSetting } from '@app/settingsSlice';
 import { useInstallPrompt } from '@core/hooks/useInstallPrompt';
 import { useApiLoading } from '@core/hooks/useApiLoading';
 import { NotificationBell } from './NotificationBell';
+import { THEMES } from '@core/theme/theme';
+import type { ThemeMode } from '@core/database/types';
 
 const DRAWER_WIDTH = 260;
 
@@ -44,12 +47,8 @@ export function TopBar({ open }: Props) {
   const { themeMode, appName } = useAppSelector((s) => s.settings.settings);
   const { canInstall, showIosInstructions, promptInstall } = useInstallPrompt();
   const [iosDialogOpen, setIosDialogOpen] = useState(false);
+  const [paletteAnchor, setPaletteAnchor] = useState<HTMLElement | null>(null);
   const apiLoading = useApiLoading();
-
-  const handleThemeToggle = () => {
-    const next = themeMode === 'dark' ? 'light' : 'dark';
-    void dispatch(saveSetting({ key: 'themeMode', value: next }));
-  };
 
   const handleInstallClick = () => {
     if (canInstall) {
@@ -57,6 +56,11 @@ export function TopBar({ open }: Props) {
     } else if (showIosInstructions) {
       setIosDialogOpen(true);
     }
+  };
+
+  const handleThemeSelect = (mode: ThemeMode) => {
+    void dispatch(saveSetting({ key: 'themeMode', value: mode }));
+    setPaletteAnchor(null);
   };
 
   return (
@@ -110,9 +114,9 @@ export function TopBar({ open }: Props) {
           </Tooltip>
         )}
 
-        <Tooltip title={themeMode === 'dark' ? 'Light Mode' : 'Dark Mode'}>
-          <IconButton onClick={handleThemeToggle} color="inherit">
-            {themeMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+        <Tooltip title="Change Theme">
+          <IconButton color="inherit" onClick={(e) => setPaletteAnchor(e.currentTarget)}>
+            <PaletteIcon />
           </IconButton>
         </Tooltip>
 
@@ -122,6 +126,77 @@ export function TopBar({ open }: Props) {
       <Fade in={apiLoading} unmountOnExit>
         <LinearProgress sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2 }} />
       </Fade>
+
+      {/* Theme palette picker */}
+      <Popover
+        open={Boolean(paletteAnchor)}
+        anchorEl={paletteAnchor}
+        onClose={() => setPaletteAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Box p={2} width={220}>
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            color="text.secondary"
+            display="block"
+            mb={1.5}
+            textTransform="uppercase"
+            letterSpacing={1}
+          >
+            Choose Theme
+          </Typography>
+          <Box display="flex" flexWrap="wrap" gap={1.25}>
+            {(Object.entries(THEMES) as [ThemeMode, { label: string; swatch: string }][]).map(
+              ([key, { label, swatch }]) => (
+                <Tooltip key={key} title={label} placement="top">
+                  <Box
+                    onClick={() => handleThemeSelect(key)}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      bgcolor: swatch,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: themeMode === key ? '3px solid' : '2px solid transparent',
+                      borderColor: themeMode === key ? 'text.primary' : 'transparent',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                      '&:hover': {
+                        transform: 'scale(1.15)',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.25)',
+                      },
+                    }}
+                  >
+                    {themeMode === key && (
+                      <CheckIcon
+                        sx={{
+                          fontSize: 16,
+                          color: '#fff',
+                          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))',
+                        }}
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+              ),
+            )}
+          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            mt={1.5}
+            textAlign="center"
+          >
+            {THEMES[themeMode]?.label ?? 'Ocean'}
+          </Typography>
+        </Box>
+      </Popover>
 
       <Dialog open={iosDialogOpen} onClose={() => setIosDialogOpen(false)}>
         <DialogTitle>{t('pwa.iosInstallTitle')}</DialogTitle>

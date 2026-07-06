@@ -8,7 +8,7 @@ const mockSettings: AppSettings = {
   currencySymbol: '₹',
   dateFormat: 'DD/MM/YYYY',
   language: 'en',
-  themeMode: 'light',
+  themeMode: 'ocean',
   showCents: true,
   compactMode: false,
   enableBudgetAlerts: true,

@@ -61,6 +61,7 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const isLoading = creating || updating;
 
   const [quickAddCategoryOpen, setQuickAddCategoryOpen] = useState(false);
+  const [quickAddSubCategoryOpen, setQuickAddSubCategoryOpen] = useState(false);
 
   const {
     control,
@@ -98,11 +99,24 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const newCategoryType: CategoryType = selectedType?.direction === 'credit' ? 'income' : 'expense';
 
   const parentCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
+  const allSubCategories = useMemo(() => categories.filter((c) => !!c.parentId), [categories]);
   const selectedCategoryId = watch('categoryId');
-  const subCategories = useMemo(
-    () => categories.filter((c) => c.parentId === selectedCategoryId),
-    [categories, selectedCategoryId],
+  const selectedSubCategoryId = watch('subCategoryId');
+
+  // Build a label for each subcategory showing its parent for context
+  const parentMap = useMemo(
+    () => new Map(parentCategories.map((c) => [c.id!, c])),
+    [parentCategories],
   );
+
+  // Clear subCategory when category changes to a different parent
+  useEffect(() => {
+    if (!selectedSubCategoryId) return;
+    const sub = allSubCategories.find((c) => c.id === selectedSubCategoryId);
+    if (sub && sub.parentId !== selectedCategoryId) {
+      setValue('subCategoryId', null);
+    }
+  }, [selectedCategoryId, selectedSubCategoryId, allSubCategories, setValue]);
 
   const projectIdValue = watch('projectId');
   useEffect(() => {
@@ -346,16 +360,54 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                     name="subCategoryId"
                     control={control}
                     render={({ field }) => (
-                      <Autocomplete<Category>
-                        options={subCategories}
-                        getOptionLabel={(opt) => opt.name}
-                        isOptionEqualToValue={(opt, val) => opt.id === val.id}
-                        value={subCategories.find((c) => c.id === field.value) ?? null}
-                        onChange={(_, newVal) => field.onChange(newVal?.id ?? null)}
-                        disabled={subCategories.length === 0}
+                      <Autocomplete<CategoryOption>
+                        options={allSubCategories as CategoryOption[]}
+                        getOptionLabel={(opt) => {
+                          if ('__addNew' in opt) return opt.name;
+                          const parent = parentMap.get(opt.parentId!);
+                          return parent ? `${opt.name} · ${parent.name}` : opt.name;
+                        }}
+                        isOptionEqualToValue={(opt, val) =>
+                          !('__addNew' in opt) && !('__addNew' in val) && opt.id === val.id
+                        }
+                        value={allSubCategories.find((c) => c.id === field.value) ?? null}
+                        onChange={(_, newVal) => {
+                          if (newVal && '__addNew' in newVal) {
+                            setQuickAddSubCategoryOpen(true);
+                            return;
+                          }
+                          field.onChange(newVal?.id ?? null);
+                          if (newVal?.parentId) {
+                            setValue('categoryId', newVal.parentId);
+                          }
+                        }}
+                        filterOptions={(options, params) => {
+                          const filtered = catFilter(options, params);
+                          filtered.push({ __addNew: true, name: '+ Add New Sub Category' });
+                          return filtered;
+                        }}
+                        groupBy={(opt) =>
+                          '__addNew' in opt ? '' : (parentMap.get(opt.parentId!)?.name ?? '')
+                        }
                         renderOption={(props, opt) => {
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           const { key, ...rest } = props as any;
+                          if ('__addNew' in opt) {
+                            return (
+                              <li key={key} {...rest}>
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  gap={1}
+                                  color="primary.main"
+                                  fontWeight={600}
+                                >
+                                  <AddIcon fontSize="small" />
+                                  {opt.name}
+                                </Box>
+                              </li>
+                            );
+                          }
                           return (
                             <li key={key} {...rest}>
                               <Box display="flex" alignItems="center" gap={1}>
@@ -374,13 +426,7 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                           );
                         }}
                         renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Sub Category"
-                            placeholder={
-                              subCategories.length === 0 ? 'Select a category first' : undefined
-                            }
-                          />
+                          <TextField {...params} label="Sub Category (optional)" />
                         )}
                       />
                     )}
@@ -515,6 +561,14 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
         onClose={() => setQuickAddCategoryOpen(false)}
         categoryType={newCategoryType}
         onCreated={(id) => setValue('categoryId', id)}
+      />
+
+      <QuickAddCategoryDialog
+        open={quickAddSubCategoryOpen}
+        onClose={() => setQuickAddSubCategoryOpen(false)}
+        categoryType={newCategoryType}
+        parentId={selectedCategoryId ?? undefined}
+        onCreated={(id) => setValue('subCategoryId', id)}
       />
     </Dialog>
   );

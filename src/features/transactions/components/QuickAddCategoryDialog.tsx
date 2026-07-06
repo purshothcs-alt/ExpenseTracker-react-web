@@ -18,13 +18,21 @@ interface Props {
   onClose: () => void;
   categoryType: CategoryType;
   onCreated: (id: number) => void;
+  parentId?: number;
 }
 
-export function QuickAddCategoryDialog({ open, onClose, categoryType, onCreated }: Props) {
+export function QuickAddCategoryDialog({
+  open,
+  onClose,
+  categoryType,
+  onCreated,
+  parentId,
+}: Props) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#2563EB');
   const [createCategory, { isLoading }] = useCreateCategoryMutation();
   const { enqueueSnackbar } = useSnackbar();
+  const isSubCategory = parentId !== undefined;
 
   const handleClose = () => {
     setName('');
@@ -40,18 +48,23 @@ export function QuickAddCategoryDialog({ open, onClose, categoryType, onCreated 
         color,
         categoryType,
         isActive: true,
+        ...(isSubCategory ? { parentId } : {}),
       } as Omit<Category, 'id' | 'createdAt' | 'updatedAt'>).unwrap();
-      enqueueSnackbar('Category created', { variant: 'success' });
+      enqueueSnackbar(isSubCategory ? 'Sub Category created' : 'Category created', {
+        variant: 'success',
+      });
       onCreated(id);
       handleClose();
     } catch {
-      enqueueSnackbar('Failed to create category', { variant: 'error' });
+      enqueueSnackbar('Failed to create', { variant: 'error' });
     }
   };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-      <DialogTitle fontWeight={700}>Add New Category</DialogTitle>
+      <DialogTitle fontWeight={700}>
+        {isSubCategory ? 'Add New Sub Category' : 'Add New Category'}
+      </DialogTitle>
       <DialogContent>
         <Box display="flex" gap={2} alignItems="flex-start" mt={1}>
           <ColorPicker value={color} onChange={setColor} />

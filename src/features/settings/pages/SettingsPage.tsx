@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { setLanguage } from '@localization/i18n';
 import { useState } from 'react';
 import type { ThemeMode } from '@core/database/types';
+import { THEMES } from '@core/theme/theme';
 
 const CURRENCIES = [
   { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
@@ -212,14 +213,29 @@ export function SettingsPage() {
                 <TextField
                   select
                   label="Theme"
-                  value={settings.themeMode || 'light'}
+                  value={settings.themeMode || 'ocean'}
                   onChange={(e) => handleSave('themeMode', e.target.value as ThemeMode)}
                   size="small"
                   fullWidth
                 >
-                  <MenuItem value="light">Light</MenuItem>
-                  <MenuItem value="dark">Dark</MenuItem>
-                  <MenuItem value="system">System</MenuItem>
+                  {(Object.entries(THEMES) as [ThemeMode, { label: string; swatch: string }][]).map(
+                    ([key, { label, swatch }]) => (
+                      <MenuItem key={key} value={key}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Box
+                            sx={{
+                              width: 14,
+                              height: 14,
+                              borderRadius: '50%',
+                              bgcolor: swatch,
+                              flexShrink: 0,
+                            }}
+                          />
+                          {label}
+                        </Box>
+                      </MenuItem>
+                    ),
+                  )}
                 </TextField>
                 <Divider />
                 <FormControlLabel

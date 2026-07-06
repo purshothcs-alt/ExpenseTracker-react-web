@@ -29,7 +29,7 @@ export type EntityType = 'transaction' | 'account' | 'goal' | 'asset' | 'project
 export type AuditAction = 'create' | 'update' | 'delete' | 'activate' | 'deactivate';
 export type ProjectStatus = 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
 export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'ocean' | 'forest' | 'midnight' | 'sunset' | 'royal' | 'rose';
 export type BudgetPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
 export type LoanDirection = 'borrowed' | 'lent';
 

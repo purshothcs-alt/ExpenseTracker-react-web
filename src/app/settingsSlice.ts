@@ -7,7 +7,7 @@ const defaultSettings: AppSettings = {
   appName: 'Expense Tracker Pro',
   currency: 'INR',
   currencySymbol: '₹',
-  themeMode: 'light',
+  themeMode: 'ocean',
   dateFormat: 'DD/MM/YYYY',
   language: 'en',
   weekStartDay: 1,
@@ -43,7 +43,12 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
     appName: map.appName || defaultSettings.appName,
     currency: map.currency || defaultSettings.currency,
     currencySymbol: map.currencySymbol || defaultSettings.currencySymbol,
-    themeMode: (map.themeMode as ThemeMode) || defaultSettings.themeMode,
+    themeMode:
+      (['ocean', 'forest', 'midnight', 'sunset', 'royal', 'rose'].includes(map.themeMode)
+        ? (map.themeMode as ThemeMode)
+        : map.themeMode === 'dark'
+          ? 'midnight'
+          : 'ocean') || defaultSettings.themeMode,
     dateFormat: map.dateFormat || defaultSettings.dateFormat,
     language: map.language || defaultSettings.language,
     weekStartDay: Number(map.weekStartDay ?? defaultSettings.weekStartDay),

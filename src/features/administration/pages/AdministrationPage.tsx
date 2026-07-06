@@ -21,11 +21,15 @@ import {
   Tab,
   Chip,
   Switch,
+  InputAdornment,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -121,6 +125,16 @@ function GenericAdmin<T extends GenericRow>({
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<T | undefined>();
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  const filteredItems = items.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' ? item.isActive !== false : item.isActive === false);
+    return matchesSearch && matchesStatus;
+  });
 
   const {
     control,
@@ -179,11 +193,48 @@ function GenericAdmin<T extends GenericRow>({
 
   return (
     <Box>
-      <Box display="flex" justifyContent="flex-end" mb={1}>
+      <Box display="flex" gap={1} alignItems="center" mb={1.5} flexWrap="wrap">
+        <TextField
+          size="small"
+          placeholder={`Search ${title.toLowerCase()}s...`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ flex: 1, minWidth: 160 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <ToggleButtonGroup
+          size="small"
+          value={statusFilter}
+          exclusive
+          onChange={(_, v) => {
+            if (v) setStatusFilter(v);
+          }}
+        >
+          <ToggleButton value="all" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            All
+          </ToggleButton>
+          <ToggleButton value="active" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            Active
+          </ToggleButton>
+          <ToggleButton value="inactive" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            Inactive
+          </ToggleButton>
+        </ToggleButtonGroup>
         <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => openForm()}>
           Add {title}
         </Button>
       </Box>
+      {filteredItems.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          No {title.toLowerCase()}s found
+        </Typography>
+      )}
 
       <TableContainer>
         <Table size="small">
@@ -196,7 +247,7 @@ function GenericAdmin<T extends GenericRow>({
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <TableRow key={item.id} hover>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
@@ -331,6 +382,20 @@ function CategoriesAdmin() {
   const [formOpen, setFormOpen] = useState(false);
   const [editCat, setEditCat] = useState<Category | undefined>();
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income' | 'both' | 'transfer'>(
+    'all',
+  );
+
+  const filteredCategories = categories.filter((cat) => {
+    const matchesSearch = cat.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' ? cat.isActive !== false : cat.isActive === false);
+    const matchesType = typeFilter === 'all' || cat.categoryType === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   const {
     control,
@@ -385,11 +450,62 @@ function CategoriesAdmin() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="flex-end" mb={1}>
+      <Box display="flex" gap={1} alignItems="center" mb={1} flexWrap="wrap">
+        <TextField
+          size="small"
+          placeholder="Search categories..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ flex: 1, minWidth: 160 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <TextField
+          select
+          size="small"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+          sx={{ minWidth: 110 }}
+          label="Type"
+        >
+          <MenuItem value="all">All Types</MenuItem>
+          <MenuItem value="expense">Expense</MenuItem>
+          <MenuItem value="income">Income</MenuItem>
+          <MenuItem value="both">Both</MenuItem>
+          <MenuItem value="transfer">Transfer</MenuItem>
+        </TextField>
+        <ToggleButtonGroup
+          size="small"
+          value={statusFilter}
+          exclusive
+          onChange={(_, v) => {
+            if (v) setStatusFilter(v);
+          }}
+        >
+          <ToggleButton value="all" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            All
+          </ToggleButton>
+          <ToggleButton value="active" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            Active
+          </ToggleButton>
+          <ToggleButton value="inactive" sx={{ px: 1.5, fontSize: '0.7rem' }}>
+            Inactive
+          </ToggleButton>
+        </ToggleButtonGroup>
         <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => openForm()}>
           Add Category
         </Button>
       </Box>
+      {search || statusFilter !== 'all' || typeFilter !== 'all' ? (
+        <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+          Showing {filteredCategories.length} of {categories.length} categories
+        </Typography>
+      ) : null}
       <TableContainer>
         <Table size="small">
           <TableHead>
@@ -402,7 +518,7 @@ function CategoriesAdmin() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {categories.map((cat) => (
+            {filteredCategories.map((cat) => (
               <TableRow key={cat.id} hover>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
