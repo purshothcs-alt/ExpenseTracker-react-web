@@ -1,5 +1,6 @@
 import { baseApi } from './baseApi';
 import db from '@core/database/db';
+import { transactionRepository } from '@core/database/repositories';
 import type { Account, AccountType, AccountWithType } from '@core/database/types';
 
 export const accountsApi = baseApi.injectEndpoints({
@@ -76,6 +77,9 @@ export const accountsApi = baseApi.injectEndpoints({
       queryFn: async ({ id, data }) => {
         try {
           await db.accounts.update(id, { ...data, updatedAt: new Date().toISOString() });
+          if (data.openingBalance !== undefined) {
+            await transactionRepository.updateAccountBalance(id);
+          }
           return { data: undefined };
         } catch (e) {
           return { error: { status: 'CUSTOM_ERROR', error: String(e) } };

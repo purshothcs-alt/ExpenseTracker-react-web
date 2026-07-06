@@ -179,7 +179,7 @@ export class TransactionRepository {
     }
   }
 
-  private async updateAccountBalance(accountId: number): Promise<void> {
+  async updateAccountBalance(accountId: number): Promise<void> {
     const account = await db.accounts.get(accountId);
     if (!account) return;
 

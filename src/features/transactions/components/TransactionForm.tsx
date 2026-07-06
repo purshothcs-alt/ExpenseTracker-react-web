@@ -8,6 +8,7 @@ import {
   TextField,
   MenuItem,
   Autocomplete,
+  createFilterOptions,
   Chip,
   Box,
   InputAdornment,
@@ -28,7 +29,12 @@ import {
   useUpdateTransactionMutation,
 } from '@app/api/transactionsApi';
 import { useAppSettings } from '@core/hooks/useAppSettings';
-import type { Transaction, Tag, CategoryType } from '@core/database/types';
+import type { Transaction, Tag, CategoryType, Category } from '@core/database/types';
+
+type CategoryOption =
+  | Category
+  | { __addNew: true; name: string; id?: undefined; color?: undefined };
+const catFilter = createFilterOptions<CategoryOption>();
 import { useSnackbar } from 'notistack';
 import { useEffect, useMemo, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
@@ -274,77 +280,112 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                     name="categoryId"
                     control={control}
                     render={({ field }) => (
-                      <TextField
-                        {...field}
-                        select
-                        fullWidth
-                        label="Category"
-                        value={field.value || ''}
-                        onChange={(e) => {
-                          if (e.target.value === '__add_new__') {
+                      <Autocomplete<CategoryOption>
+                        options={isExpenseType ? parentCategories : parentCategories}
+                        getOptionLabel={(opt) => ('__addNew' in opt ? opt.name : opt.name)}
+                        isOptionEqualToValue={(opt, val) =>
+                          !('__addNew' in opt) && !('__addNew' in val) && opt.id === val.id
+                        }
+                        value={parentCategories.find((c) => c.id === field.value) ?? null}
+                        onChange={(_, newVal) => {
+                          if (newVal && '__addNew' in newVal) {
                             setQuickAddCategoryOpen(true);
-                            return;
+                          } else {
+                            field.onChange(newVal?.id ?? null);
                           }
-                          field.onChange(e.target.value ? Number(e.target.value) : null);
                         }}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                        {parentCategories.map((c) => (
-                          <MenuItem key={c.id} value={c.id!}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Box
-                                sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: c.color }}
-                              />
-                              {c.name}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                        <Divider />
-                        <MenuItem
-                          value="__add_new__"
-                          sx={{ color: 'primary.main', fontWeight: 600 }}
-                        >
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <AddIcon fontSize="small" />
-                            Add New Category
-                          </Box>
-                        </MenuItem>
-                      </TextField>
+                        filterOptions={(options, params) => {
+                          const filtered = catFilter(options as CategoryOption[], params);
+                          filtered.push({ __addNew: true, name: '+ Add New Category' });
+                          return filtered;
+                        }}
+                        renderOption={(props, opt) => {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const { key, ...rest } = props as any;
+                          if ('__addNew' in opt) {
+                            return (
+                              <li key={key} {...rest}>
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  gap={1}
+                                  color="primary.main"
+                                  fontWeight={600}
+                                >
+                                  <AddIcon fontSize="small" />
+                                  {opt.name}
+                                </Box>
+                              </li>
+                            );
+                          }
+                          return (
+                            <li key={key} {...rest}>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Box
+                                  sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: opt.color,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                {opt.name}
+                              </Box>
+                            </li>
+                          );
+                        }}
+                        renderInput={(params) => <TextField {...params} label="Category" />}
+                      />
                     )}
                   />
                 </Grid>
 
-                {subCategories.length > 0 && (
-                  <Grid size={6}>
-                    <Controller
-                      name="subCategoryId"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          select
-                          fullWidth
-                          label="Sub Category"
-                          value={field.value || ''}
-                          onChange={(e) =>
-                            field.onChange(e.target.value ? Number(e.target.value) : null)
-                          }
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {subCategories.map((c) => (
-                            <MenuItem key={c.id} value={c.id!}>
-                              {c.name}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      )}
-                    />
-                  </Grid>
-                )}
+                <Grid size={6}>
+                  <Controller
+                    name="subCategoryId"
+                    control={control}
+                    render={({ field }) => (
+                      <Autocomplete<Category>
+                        options={subCategories}
+                        getOptionLabel={(opt) => opt.name}
+                        isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                        value={subCategories.find((c) => c.id === field.value) ?? null}
+                        onChange={(_, newVal) => field.onChange(newVal?.id ?? null)}
+                        disabled={subCategories.length === 0}
+                        renderOption={(props, opt) => {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const { key, ...rest } = props as any;
+                          return (
+                            <li key={key} {...rest}>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Box
+                                  sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: opt.color,
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                {opt.name}
+                              </Box>
+                            </li>
+                          );
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Sub Category"
+                            placeholder={
+                              subCategories.length === 0 ? 'Select a category first' : undefined
+                            }
+                          />
+                        )}
+                      />
+                    )}
+                  />
+                </Grid>
               </>
             )}
 

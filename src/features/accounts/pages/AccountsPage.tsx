@@ -121,12 +121,14 @@ export function AccountsPage() {
             icon={<AccountBalanceIcon />}
             color="#2563EB"
             loading={isLoading}
+            index={0}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Active Accounts"
             value={accounts.length}
+            index={1}
             color="#059669"
             loading={isLoading}
           />

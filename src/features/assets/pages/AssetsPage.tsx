@@ -142,6 +142,7 @@ export function AssetsPage() {
             icon={<DiamondIcon />}
             color="#7C3AED"
             loading={isLoading}
+            index={0}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -151,6 +152,7 @@ export function AssetsPage() {
             icon={<TrendingDownIcon />}
             color="#D97706"
             loading={isLoading}
+            index={1}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -158,6 +160,7 @@ export function AssetsPage() {
             title="Total Gain/Loss"
             value={formatCurrency(totalGain)}
             icon={totalGain >= 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
+            index={2}
             color={totalGain >= 0 ? '#059669' : '#DC2626'}
             loading={isLoading}
           />

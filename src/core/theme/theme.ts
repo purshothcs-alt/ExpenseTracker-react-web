@@ -62,15 +62,13 @@ const baseComponents = {
       TransitionComponent: Zoom,
     },
     styleOverrides: {
+      root: {
+        '& .MuiBackdrop-root': { backdropFilter: 'blur(2px)' },
+      },
       paper: {
         borderRadius: 16,
         boxShadow: '0 24px 48px rgba(0,0,0,0.18), 0 8px 16px rgba(0,0,0,0.08)',
       },
-    },
-  },
-  MuiBackdrop: {
-    styleOverrides: {
-      root: { backdropFilter: 'blur(2px)' },
     },
   },
   MuiMenu: {

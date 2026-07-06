@@ -48,7 +48,27 @@ export function NotificationBell() {
   return (
     <>
       <Tooltip title="Notifications">
-        <IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)}>
+        <IconButton
+          color="inherit"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          sx={
+            notifications.length > 0
+              ? {
+                  animation: 'bell-ring 2.2s ease-in-out infinite',
+                  transformOrigin: '50% 0%',
+                  '@keyframes bell-ring': {
+                    '0%, 100%': { transform: 'rotate(0deg)' },
+                    '4%': { transform: 'rotate(14deg)' },
+                    '8%': { transform: 'rotate(-12deg)' },
+                    '12%': { transform: 'rotate(9deg)' },
+                    '16%': { transform: 'rotate(-7deg)' },
+                    '20%': { transform: 'rotate(4deg)' },
+                    '24%': { transform: 'rotate(0deg)' },
+                  },
+                }
+              : undefined
+          }
+        >
           <Badge badgeContent={notifications.length} color="error" max={9}>
             <NotificationsNoneIcon />
           </Badge>

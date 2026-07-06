@@ -1,6 +1,7 @@
 import { Card, CardContent, Box, Typography, Skeleton } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import { useAnimatedValue } from '@core/hooks/useAnimatedValue';
 import type { ReactNode } from 'react';
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
   color?: string;
   trend?: number;
   loading?: boolean;
+  index?: number;
 }
 
 export function StatCard({
@@ -21,12 +23,17 @@ export function StatCard({
   color = '#2563EB',
   trend,
   loading,
+  index = 0,
 }: Props) {
+  const animatedValue = useAnimatedValue(value);
+
   return (
     <Card
       sx={{
         height: '100%',
-        animation: 'stat-card-enter 0.4s ease-out',
+        opacity: 0,
+        animation: 'stat-card-enter 0.4s ease-out forwards',
+        animationDelay: `${Math.min(index, 8) * 60}ms`,
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         '&:hover': { transform: 'translateY(-3px)', boxShadow: 4 },
         '@keyframes stat-card-enter': {
@@ -51,7 +58,7 @@ export function StatCard({
               <Skeleton variant="text" width={120} height={44} />
             ) : (
               <Typography variant="h4" fontWeight={700} color="text.primary" mt={0.5}>
-                {value}
+                {animatedValue}
               </Typography>
             )}
             {subtitle && (
