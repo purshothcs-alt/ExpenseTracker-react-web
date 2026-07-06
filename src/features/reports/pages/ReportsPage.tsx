@@ -111,8 +111,6 @@ export function ReportsPage() {
   );
 
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id!, c])), [categories]);
-  const parentCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
-
   const monthlyChartData = monthlySummary.map((d) => ({
     month: dayjs(d.month + '-01').format('MMM YY'),
     Income: d.income,
@@ -120,14 +118,15 @@ export function ReportsPage() {
     Net: d.income - d.expense,
   }));
 
-  // Filter categoryTotals by selected parent categories (includes subcategories of selected parents)
+  // Filter: direct id match OR parent match (selecting a parent shows all its subcategories)
   const filteredCategoryTotals = useMemo(() => {
     if (filterCategoryIds.length === 0) return categoryTotals;
     return categoryTotals.filter((d) => {
       const cat = catMap.get(d.categoryId);
       if (!cat) return false;
-      const parentId = cat.parentId ?? cat.id!;
-      return filterCategoryIds.includes(parentId);
+      if (filterCategoryIds.includes(cat.id!)) return true;
+      if (cat.parentId && filterCategoryIds.includes(cat.parentId)) return true;
+      return false;
     });
   }, [categoryTotals, filterCategoryIds, catMap]);
 
@@ -504,42 +503,69 @@ export function ReportsPage() {
                   <FilterListIcon fontSize="small" color="action" />
                   <Autocomplete
                     multiple
-                    options={parentCategories}
-                    getOptionLabel={(o) => o.name}
+                    options={categories}
+                    getOptionLabel={(o) => {
+                      if (!o.parentId) return o.name;
+                      const parent = catMap.get(o.parentId);
+                      return parent ? `${o.name} (${parent.name})` : o.name;
+                    }}
+                    groupBy={(o) => {
+                      if (!o.parentId) return o.name;
+                      return catMap.get(o.parentId)?.name ?? '';
+                    }}
                     isOptionEqualToValue={(a, b) => a.id === b.id}
-                    value={parentCategories.filter((c) => filterCategoryIds.includes(c.id!))}
+                    value={categories.filter((c) => filterCategoryIds.includes(c.id!))}
                     onChange={(_, newVal) => {
                       setFilterCategoryIds(newVal.map((c) => c.id!));
                       setDrillCategoryId(null);
                     }}
                     renderTags={(val, getTagProps) =>
-                      val.map((opt, i) => (
-                        <Chip
-                          {...getTagProps({ index: i })}
-                          key={opt.id}
-                          label={opt.name}
-                          size="small"
-                          sx={{ bgcolor: `${opt.color}22`, color: opt.color }}
-                          avatar={
+                      val.map((opt, i) => {
+                        const label = opt.parentId
+                          ? `${catMap.get(opt.parentId)?.name} › ${opt.name}`
+                          : opt.name;
+                        return (
+                          <Chip
+                            {...getTagProps({ index: i })}
+                            key={opt.id}
+                            label={label}
+                            size="small"
+                            sx={{ bgcolor: `${opt.color}22`, color: opt.color }}
+                          />
+                        );
+                      })
+                    }
+                    renderOption={(props, opt) => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const { key, ...rest } = props as any;
+                      return (
+                        <li key={key} {...rest}>
+                          <Box display="flex" alignItems="center" gap={1}>
                             <Box
                               sx={{
                                 width: 8,
                                 height: 8,
                                 borderRadius: '50%',
                                 bgcolor: opt.color,
-                                ml: 1,
+                                flexShrink: 0,
                               }}
                             />
-                          }
-                        />
-                      ))
-                    }
+                            <Typography variant="body2">{opt.name}</Typography>
+                            {opt.parentId && (
+                              <Typography variant="caption" color="text.secondary">
+                                — sub
+                              </Typography>
+                            )}
+                          </Box>
+                        </li>
+                      );
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Filter by Category"
+                        label="Filter by Category / Sub Category"
                         placeholder={filterCategoryIds.length === 0 ? 'All categories' : ''}
-                        sx={{ minWidth: 280 }}
+                        sx={{ minWidth: 320 }}
                       />
                     )}
                   />
