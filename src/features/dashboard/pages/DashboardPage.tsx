@@ -15,16 +15,23 @@ import { BudgetStatusWidget } from '../components/widgets/BudgetStatusWidget';
 import { GoalProgressWidget } from '../components/widgets/GoalProgressWidget';
 import { DashboardCustomizer } from '../components/DashboardCustomizer';
 import { TransactionForm } from '@features/transactions/components/TransactionForm';
-import { useGetUserDashboardConfigQuery } from '@app/api/dashboardApi';
+import {
+  useGetUserDashboardConfigQuery,
+  useGetAllDashboardWidgetsQuery,
+} from '@app/api/dashboardApi';
 
 export function DashboardPage() {
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
   const { data: configuredWidgets = [] } = useGetUserDashboardConfigQuery();
+  const { data: allWidgets = [] } = useGetAllDashboardWidgetsQuery();
 
-  const active = new Set(configuredWidgets.map((c) => c.widget?.componentKey));
+  const activeKeys = new Set(configuredWidgets.map((c) => c.widget?.componentKey).filter(Boolean));
+  const allKeys = new Set(allWidgets.map((w) => w.componentKey));
 
-  const show = (key: string) => active.size === 0 || active.has(key);
+  // Show a widget if: no config at all yet, OR it's explicitly in the config,
+  // OR the widget doesn't exist in the DB at all (safety fallback).
+  const show = (key: string) => activeKeys.size === 0 || activeKeys.has(key) || !allKeys.has(key);
 
   return (
     <Box>

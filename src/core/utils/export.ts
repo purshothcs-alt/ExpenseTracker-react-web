@@ -38,7 +38,16 @@ export function exportToPDF<T extends object>(
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
-  doc.save(`${filename}.pdf`);
+  // Use blob + anchor approach for reliable cross-browser download
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export function exportToExcel<T extends object>(

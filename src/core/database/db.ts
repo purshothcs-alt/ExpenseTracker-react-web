@@ -104,6 +104,37 @@ export class ExpenseTrackerDB extends Dexie {
     this.version(2).stores({
       projectExpenses: '++id, projectId, categoryId, expenseDate, transactionId',
     });
+
+    // v3: populate missing default dashboard widget configs for existing users
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        const MISSING_KEYS = ['budget-status', 'goal-progress', 'net-worth'];
+        const widgets = await tx.table('dashboardWidgets').toArray();
+        const configs = await tx.table('userDashboardConfig').toArray();
+        const configuredWidgetIds = new Set(configs.map((c: any) => c.widgetId));
+        const count = configs.length;
+        const ts = new Date().toISOString();
+        let added = count;
+        for (const key of MISSING_KEYS) {
+          const widget = widgets.find((w: any) => w.componentKey === key);
+          if (widget && !configuredWidgetIds.has(widget.id)) {
+            await tx.table('userDashboardConfig').add({
+              widgetId: widget.id,
+              positionX: 0,
+              positionY: added,
+              width: widget.minWidth || 1,
+              height: widget.minHeight || 1,
+              config: widget.defaultConfig || '{}',
+              isVisible: true,
+              displayOrder: added + 1,
+              createdAt: ts,
+              updatedAt: ts,
+            });
+            added++;
+          }
+        }
+      });
   }
 }
 
