@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.expensetracker.pro',
-  appName: 'Expense Tracker Pro',
+  appName: 'MyExpenses',
   webDir: 'dist',
   android: {
     // The web build already targets modern browsers; Capacitor just needs a
