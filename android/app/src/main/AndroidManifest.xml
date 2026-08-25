@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+
+        <!--
+          Read-only SMS capture for the transaction-import feature (see
+          SmsReceiver.kt / SmsQueueStore.kt / SmsImportPlugin.kt). Declared
+          in the manifest (rather than registered at runtime) so incoming
+          SMS are still captured even if the app isn't currently running —
+          Android exempts SMS_RECEIVED from the background-broadcast
+          restrictions introduced in Android 8. The android:permission
+          attribute restricts who may trigger this receiver to holders of
+          BROADCAST_SMS (the system telephony stack), so another app can't
+          spoof a fake SMS broadcast into it.
+        -->
+        <receiver
+            android:name=".SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      RECEIVE_SMS only — not READ_SMS, and this app never requests the
+      default-SMS-app role. See SmsReceiver.kt for why RECEIVE_SMS alone is
+      sufficient. This is a Google Play "sensitive permission"; distributing
+      this build via the Play Store requires the Permissions Declaration
+      form under Play Console > App content, justified by this feature.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+</manifest>

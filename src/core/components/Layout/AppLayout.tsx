@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { setSidebarOpen } from '@app/uiSlice';
 import { useNotificationGenerator } from '@core/hooks/useNotificationGenerator';
+import { useNativeSmsListener } from '@core/hooks/useNativeSmsListener';
 
 const DRAWER_WIDTH = 260;
 
@@ -18,6 +19,7 @@ export function AppLayout({ children }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   useNotificationGenerator();
+  useNativeSmsListener();
 
   const handleClose = () => dispatch(setSidebarOpen(false));
 

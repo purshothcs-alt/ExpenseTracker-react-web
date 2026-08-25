@@ -11,6 +11,7 @@ import {
   Divider,
   Avatar,
   Chip,
+  Button,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { PageHeader } from '@core/components/common/PageHeader';
@@ -19,9 +20,14 @@ import { saveSetting } from '@app/settingsSlice';
 import { useSnackbar } from 'notistack';
 import { useTranslation } from 'react-i18next';
 import { setLanguage } from '@localization/i18n';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ThemeMode } from '@core/database/types';
 import { THEMES } from '@core/theme/theme';
+import { Capacitor } from '@capacitor/core';
+import { SmsImport } from '@core/native/smsImportPlugin';
+import SmsIcon from '@mui/icons-material/Sms';
+
+type SmsPermissionState = 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale' | 'unknown';
 
 const CURRENCIES = [
   { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
@@ -56,6 +62,28 @@ export function SettingsPage() {
   const settings = useAppSelector((s) => s.settings.settings);
 
   const [appName, setAppName] = useState(settings.appName);
+  const isNativeAndroid = Capacitor.isNativePlatform();
+  const [smsPermission, setSmsPermission] = useState<SmsPermissionState>('unknown');
+
+  useEffect(() => {
+    if (!isNativeAndroid) return;
+    SmsImport.checkPermissions()
+      .then((r) => setSmsPermission(r.sms))
+      .catch(() => setSmsPermission('unknown'));
+  }, [isNativeAndroid]);
+
+  const handleRequestSmsPermission = async () => {
+    try {
+      const result = await SmsImport.requestPermissions();
+      setSmsPermission(result.sms);
+      enqueueSnackbar(
+        result.sms === 'granted' ? 'SMS permission granted' : 'SMS permission was not granted',
+        { variant: result.sms === 'granted' ? 'success' : 'warning' },
+      );
+    } catch {
+      enqueueSnackbar('Failed to request SMS permission', { variant: 'error' });
+    }
+  };
 
   const handleSave = async (key: string, value: string | number | boolean) => {
     try {
@@ -337,6 +365,39 @@ export function SettingsPage() {
             </CardContent>
           </Card>
         </Grid>
+
+        {isNativeAndroid && (
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <SmsIcon color="primary" />
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Native SMS Auto-Detection
+                  </Typography>
+                </Box>
+                <Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+                  <Typography variant="body2">Permission status</Typography>
+                  <Chip
+                    label={smsPermission}
+                    size="small"
+                    color={smsPermission === 'granted' ? 'success' : 'default'}
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                  When granted, incoming bank/UPI SMS are picked up automatically — no need to
+                  manually share each one. Only the RECEIVE_SMS permission is used; this app never
+                  reads your full message history and never becomes your default SMS app.
+                </Typography>
+                {smsPermission !== 'granted' && (
+                  <Button variant="contained" size="small" onClick={handleRequestSmsPermission}>
+                    Grant SMS Permission
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         <Grid size={12}>
           <Card>
