@@ -147,7 +147,7 @@ export function Navigation() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <Box sx={{ p: 2.5, pb: 1.5 }}>
+      <Box sx={{ p: 2.5, pb: 1.5, pt: 'calc(20px + env(safe-area-inset-top))' }}>
         <Box
           component={NavLink}
           to="/"

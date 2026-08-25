@@ -71,6 +71,9 @@ export function TopBar({ open }: Props) {
         bgcolor: 'background.paper',
         color: 'text.primary',
         zIndex: (theme) => theme.zIndex.drawer + 1,
+        // Reserves space for the status bar on edge-to-edge Android (Capacitor
+        // native build). 0 in every browser/PWA context, so this is a no-op there.
+        pt: 'env(safe-area-inset-top)',
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.leavingScreen,

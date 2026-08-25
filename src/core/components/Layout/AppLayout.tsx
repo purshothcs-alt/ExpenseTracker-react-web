@@ -82,7 +82,12 @@ export function AppLayout({ children }: Props) {
         sx={{
           flexGrow: 1,
           minWidth: 0,
-          pt: { xs: 7, sm: 8 },
+          // Base toolbar height (56px mobile / 64px desktop) plus the same
+          // status-bar inset TopBar reserves, so content clears the fixed AppBar.
+          pt: {
+            xs: 'calc(56px + env(safe-area-inset-top))',
+            sm: 'calc(64px + env(safe-area-inset-top))',
+          },
           px: { xs: 2, md: 3 },
           pb: 3,
           maxWidth: '100%',
