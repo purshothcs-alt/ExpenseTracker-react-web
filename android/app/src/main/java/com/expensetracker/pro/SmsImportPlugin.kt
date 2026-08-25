@@ -11,7 +11,7 @@ import com.getcapacitor.annotation.Permission
 
 /**
  * Thin bridge between the native SMS receiver and the JS SMS-import
- * pipeline (src/core/sms/*). Deliberately does no parsing/classification —
+ * pipeline (see the src/core/sms directory). Deliberately does no parsing/classification —
  * it only (a) reports/requests the RECEIVE_SMS permission and (b) hands
  * back whatever SmsReceiver has queued since the last drain. Everything
  * else — detection, bank parsing, dedup, account/category matching — stays

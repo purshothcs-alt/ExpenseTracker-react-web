@@ -8,7 +8,7 @@ import org.json.JSONObject
  * A small durable hand-off buffer between the native SMS receiver and the
  * JS parsing pipeline. Everything that actually decides "is this a
  * transaction / which bank / what account" lives in TypeScript
- * (src/core/sms/*) — this class only exists because a BroadcastReceiver can
+ * (see the src/core/sms directory) — this class only exists because a BroadcastReceiver can
  * fire while the WebView/JS bridge isn't running (app killed or not yet
  * loaded), so the message has to be stashed somewhere until the JS layer
  * can drain it on next launch/resume.
