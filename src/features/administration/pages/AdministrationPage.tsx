@@ -77,7 +77,13 @@ import {
   useUpdateAssetTypeMutation,
   useDeleteAssetTypeMutation,
 } from '@app/api/assetsApi';
-import type { Category } from '@core/database/types';
+import {
+  useGetMerchantCategoryMappingsQuery,
+  useCreateMerchantCategoryMappingMutation,
+  useUpdateMerchantCategoryMappingMutation,
+  useDeleteMerchantCategoryMappingMutation,
+} from '@app/api/smsImportApi';
+import type { Category, MerchantCategoryMapping } from '@core/database/types';
 
 const nameColorSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -670,6 +676,218 @@ function CategoriesAdmin() {
   );
 }
 
+const mappingSchema = z.object({
+  merchantPattern: z.string().min(1, 'Pattern is required').max(100),
+  categoryId: z.number().positive('Category is required'),
+  isActive: z.boolean(),
+});
+type MappingForm = z.infer<typeof mappingSchema>;
+
+function MerchantMappingsAdmin() {
+  const { enqueueSnackbar } = useSnackbar();
+  const { data: mappings = [] } = useGetMerchantCategoryMappingsQuery();
+  const { data: categories = [] } = useGetAllCategoriesQuery();
+  const [create] = useCreateMerchantCategoryMappingMutation();
+  const [update] = useUpdateMerchantCategoryMappingMutation();
+  const [deleteMapping] = useDeleteMerchantCategoryMappingMutation();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<MerchantCategoryMapping | undefined>();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  const categoryMap = new Map(categories.map((c) => [c.id!, c]));
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<MappingForm>({
+    resolver: zodResolver(mappingSchema),
+    defaultValues: { isActive: true },
+  });
+
+  const openForm = (item?: MerchantCategoryMapping) => {
+    setEditItem(item);
+    reset(
+      item
+        ? {
+            merchantPattern: item.merchantPattern,
+            categoryId: item.categoryId,
+            isActive: item.isActive,
+          }
+        : { isActive: true },
+    );
+    setFormOpen(true);
+  };
+
+  const onSubmit = async (data: MappingForm) => {
+    try {
+      if (editItem?.id) {
+        await update({ id: editItem.id, data }).unwrap();
+        enqueueSnackbar('Mapping updated', { variant: 'success' });
+      } else {
+        await create(data).unwrap();
+        enqueueSnackbar('Mapping created', { variant: 'success' });
+      }
+      setFormOpen(false);
+    } catch {
+      enqueueSnackbar('Failed to save', { variant: 'error' });
+    }
+  };
+
+  return (
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+        <Typography variant="body2" color="text.secondary">
+          Merchant text detected in an SMS is matched against these patterns (case-insensitive) to
+          suggest a category during import review. Built-in defaults (Amazon, Swiggy, Uber, etc.)
+          apply automatically when no explicit mapping is found below.
+        </Typography>
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => openForm()}
+          sx={{ flexShrink: 0, ml: 2 }}
+        >
+          Add Mapping
+        </Button>
+      </Box>
+
+      {mappings.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+          No custom merchant mappings yet
+        </Typography>
+      )}
+
+      <TableContainer>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Merchant Pattern</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {mappings.map((m) => (
+              <TableRow key={m.id} hover>
+                <TableCell>
+                  <Typography variant="body2" fontWeight={500}>
+                    {m.merchantPattern}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption" color="text.secondary">
+                    {categoryMap.get(m.categoryId)?.name || '—'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={m.isActive !== false ? 'Active' : 'Inactive'}
+                    size="small"
+                    color={m.isActive !== false ? 'success' : 'default'}
+                    sx={{ height: 18, fontSize: '0.65rem' }}
+                  />
+                </TableCell>
+                <TableCell align="right">
+                  <IconButton size="small" onClick={() => openForm(m)}>
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => setDeleteId(m.id!)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={700}>{editItem ? 'Edit Mapping' : 'New Mapping'}</DialogTitle>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogContent>
+            <Box display="flex" flexDirection="column" gap={2}>
+              <Controller
+                name="merchantPattern"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Merchant Pattern *"
+                    placeholder="e.g. bigbasket"
+                    error={!!errors.merchantPattern}
+                    helperText={errors.merchantPattern?.message}
+                  />
+                )}
+              />
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    select
+                    fullWidth
+                    label="Category *"
+                    error={!!errors.categoryId}
+                    helperText={errors.categoryId?.message}
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  >
+                    {categories
+                      .filter((c) => !c.parentId)
+                      .map((c) => (
+                        <MenuItem key={c.id} value={c.id!}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="isActive"
+                control={control}
+                render={({ field }) => (
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="body2">Active</Typography>
+                    <Switch
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                    />
+                  </Box>
+                )}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setFormOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained">
+              {editItem ? 'Update' : 'Create'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        title="Delete Mapping"
+        message="Delete this merchant category mapping?"
+        onConfirm={async () => {
+          await deleteMapping(deleteId!).unwrap();
+          enqueueSnackbar('Mapping deleted', { variant: 'success' });
+          setDeleteId(null);
+        }}
+        onCancel={() => setDeleteId(null)}
+      />
+    </Box>
+  );
+}
+
 const TABS = [
   'Categories',
   'Account Types',
@@ -678,6 +896,7 @@ const TABS = [
   'Loan Types',
   'Asset Types',
   'Tags',
+  'Merchant Mappings',
 ];
 
 export function AdministrationPage() {
@@ -832,6 +1051,8 @@ export function AdministrationPage() {
               }}
             />
           )}
+
+          {tab === 7 && <MerchantMappingsAdmin />}
         </CardContent>
       </Card>
     </Box>

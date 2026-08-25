@@ -28,6 +28,8 @@ export const baseApi = createApi({
     'DynamicField',
     'IncomeType',
     'AuditLog',
+    'PendingSmsTransaction',
+    'MerchantCategoryMapping',
   ],
   endpoints: () => ({}),
 });

@@ -34,6 +34,16 @@ const ProjectsPage = lazy(() =>
 const ReportsPage = lazy(() =>
   import('@features/reports/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 );
+const PendingTransactionsPage = lazy(() =>
+  import('@features/sms-import/pages/PendingTransactionsPage').then((m) => ({
+    default: m.PendingTransactionsPage,
+  })),
+);
+const ShareTargetPage = lazy(() =>
+  import('@features/sms-import/pages/ShareTargetPage').then((m) => ({
+    default: m.ShareTargetPage,
+  })),
+);
 const SettingsPage = lazy(() =>
   import('@features/settings/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -67,6 +77,8 @@ function AnimatedRoutes() {
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/pending-transactions" element={<PendingTransactionsPage />} />
+        <Route path="/share-target" element={<ShareTargetPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/administration" element={<AdministrationPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -47,6 +47,11 @@ const schema = z.object({
   currency: z.string().min(1),
   description: z.string().optional(),
   isActive: z.boolean(),
+  accountNumberLast4: z
+    .string()
+    .regex(/^\d{4}$/, 'Enter exactly 4 digits')
+    .optional()
+    .or(z.literal('')),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -84,12 +89,13 @@ export function AccountsPage() {
   };
 
   const onSubmit = async (data: FormData) => {
+    const payload = { ...data, accountNumberLast4: data.accountNumberLast4 || undefined };
     try {
       if (editAccount?.id) {
-        await updateAccount({ id: editAccount.id, data }).unwrap();
+        await updateAccount({ id: editAccount.id, data: payload }).unwrap();
         enqueueSnackbar('Account updated', { variant: 'success' });
       } else {
-        await createAccount({ ...data, currentBalance: data.openingBalance }).unwrap();
+        await createAccount({ ...payload, currentBalance: payload.openingBalance }).unwrap();
         enqueueSnackbar('Account created', { variant: 'success' });
       }
       setFormOpen(false);
@@ -181,6 +187,11 @@ export function AccountsPage() {
                             size="small"
                             sx={{ height: 18, fontSize: '0.65rem' }}
                           />
+                          {account.accountNumberLast4 && (
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              ••{account.accountNumberLast4}
+                            </Typography>
+                          )}
                         </Box>
                       </Box>
                       <Box>
@@ -306,6 +317,24 @@ export function AccountsPage() {
                   name="currency"
                   control={control}
                   render={({ field }) => <TextField {...field} fullWidth label="Currency" />}
+                />
+              </Grid>
+              <Grid size={6}>
+                <Controller
+                  name="accountNumberLast4"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Last 4 Digits (for SMS import)"
+                      placeholder="1234"
+                      inputProps={{ maxLength: 4, inputMode: 'numeric' }}
+                      value={field.value || ''}
+                      error={!!errors.accountNumberLast4}
+                      helperText={errors.accountNumberLast4?.message}
+                    />
+                  )}
                 />
               </Grid>
               <Grid size={12}>

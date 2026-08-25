@@ -30,6 +30,8 @@ import type {
   ReportTemplate,
   AuditLog,
   IncomeType,
+  PendingSmsTransaction,
+  MerchantCategoryMapping,
 } from './types';
 
 export class ExpenseTrackerDB extends Dexie {
@@ -63,6 +65,8 @@ export class ExpenseTrackerDB extends Dexie {
   reportTemplates!: Table<ReportTemplate, number>;
   auditLogs!: Table<AuditLog, number>;
   incomeTypes!: Table<IncomeType, number>;
+  pendingSmsTransactions!: Table<PendingSmsTransaction, number>;
+  merchantCategoryMappings!: Table<MerchantCategoryMapping, number>;
 
   constructor() {
     super('ExpenseTrackerProDB');
@@ -135,6 +139,14 @@ export class ExpenseTrackerDB extends Dexie {
           }
         }
       });
+
+    // v4: SMS/UPI transaction import — pending review queue + merchant category mappings
+    this.version(4).stores({
+      accounts: '++id, name, accountTypeId, isActive, accountNumberLast4',
+      pendingSmsTransactions:
+        '++id, &sourceHash, status, smsTimestamp, matchedAccountId, direction',
+      merchantCategoryMappings: '++id, merchantPattern, categoryId, isActive',
+    });
   }
 }
 

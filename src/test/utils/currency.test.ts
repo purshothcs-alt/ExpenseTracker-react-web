@@ -19,6 +19,8 @@ const mockSettings: AppSettings = {
   decimalSeparator: '.',
   thousandSeparator: ',',
   autoBackup: false,
+  smsImportEnabled: true,
+  smsAutoApproveEnabled: false,
 };
 
 describe('formatCurrency', () => {

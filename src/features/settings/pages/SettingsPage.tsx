@@ -300,6 +300,44 @@ export function SettingsPage() {
           </Card>
         </Grid>
 
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={2}>
+                SMS / UPI Transaction Import
+              </Typography>
+              <Box display="flex" flexDirection="column" gap={1}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!settings.smsImportEnabled}
+                      onChange={(e) => handleSave('smsImportEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Detect transactions from bank/UPI SMS"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={!!settings.smsAutoApproveEnabled}
+                      disabled={!settings.smsImportEnabled}
+                      onChange={(e) => handleSave('smsAutoApproveEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Automatically approve high-confidence matches"
+                />
+                <Typography variant="caption" color="text.secondary">
+                  When automatic approval is off (recommended), every detected transaction waits in{' '}
+                  <strong>Pending Transactions</strong> for you to approve, edit, or ignore. Even
+                  with automatic approval on, a transaction is only ever auto-added when its account
+                  is matched and the parser is highly confident — everything else still waits for
+                  review.
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
         <Grid size={12}>
           <Card>
             <CardContent>

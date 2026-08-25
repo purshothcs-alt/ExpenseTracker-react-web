@@ -23,6 +23,7 @@ import MoneyOffIcon from '@mui/icons-material/MoneyOff';
 import DiamondIcon from '@mui/icons-material/Diamond';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import SmsIcon from '@mui/icons-material/Sms';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -49,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'assets', path: '/assets', icon: <DiamondIcon /> },
   { label: 'projects', path: '/projects', icon: <ConstructionIcon /> },
   { label: 'reports', path: '/reports', icon: <AssessmentIcon /> },
+  { label: 'pendingTransactions', path: '/pending-transactions', icon: <SmsIcon /> },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

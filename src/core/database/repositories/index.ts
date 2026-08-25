@@ -27,8 +27,13 @@ import type {
   BudgetPeriodRecord,
   IncomeType,
   RecurringTransaction,
+  MerchantCategoryMapping,
 } from '../types';
 export { TransactionRepository, transactionRepository } from './TransactionRepository';
+export {
+  PendingSmsTransactionRepository,
+  pendingSmsTransactionRepository,
+} from './PendingSmsTransactionRepository';
 
 export const accountTypeRepo = new BaseRepository<AccountType>(db.accountTypes as never);
 export const accountRepo = new BaseRepository<Account>(db.accounts as never);
@@ -69,4 +74,7 @@ export const budgetPeriodRepo = new BaseRepository<BudgetPeriodRecord>(db.budget
 export const incomeTypeRepo = new BaseRepository<IncomeType>(db.incomeTypes as never);
 export const recurringTransactionRepo = new BaseRepository<RecurringTransaction>(
   db.recurringTransactions as never,
+);
+export const merchantCategoryMappingRepo = new BaseRepository<MerchantCategoryMapping>(
+  db.merchantCategoryMappings as never,
 );

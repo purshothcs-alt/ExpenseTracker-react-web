@@ -20,6 +20,8 @@ const defaultSettings: AppSettings = {
   enableGoalReminders: true,
   enableLoanDueAlerts: true,
   autoBackup: false,
+  smsImportEnabled: true,
+  smsAutoApproveEnabled: false,
 };
 
 interface SettingsState {
@@ -62,6 +64,8 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
     enableLoanDueAlerts: map.enableLoanDueAlerts !== 'false',
     autoBackup: map.autoBackup === 'true',
     defaultAccountId: map.defaultAccountId ? Number(map.defaultAccountId) : undefined,
+    smsImportEnabled: map.smsImportEnabled !== 'false',
+    smsAutoApproveEnabled: map.smsAutoApproveEnabled === 'true',
   } satisfies AppSettings;
 });
 

@@ -64,6 +64,8 @@ export interface Account extends BaseEntity {
   description?: string;
   currency: string;
   isActive: boolean;
+  /** Last 4 digits of the bank/card account number, used to match incoming SMS transactions. */
+  accountNumberLast4?: string;
 }
 
 export interface TransactionType extends BaseEntity {
@@ -456,4 +458,60 @@ export interface AppSettings {
   enableLoanDueAlerts: boolean;
   autoBackup: boolean;
   defaultAccountId?: number;
+  /** Master switch for the SMS/UPI transaction import feature. */
+  smsImportEnabled: boolean;
+  /** When true, high-confidence SMS matches are inserted automatically instead of waiting for review. */
+  smsAutoApproveEnabled: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// SMS / UPI transaction import
+// ---------------------------------------------------------------------------
+
+/** How a detected SMS transaction reached its current state. */
+export type SmsTransactionStatus = 'pending' | 'approved' | 'ignored';
+
+export interface PendingSmsTransaction extends BaseEntity {
+  /** Dedup key — derived from reference id when available, otherwise a fallback composite. See core/sms/dedup.ts. */
+  sourceHash: string;
+  /** SMS sender header, e.g. "HDFCBK", "VM-SBIINB". Never a phone number tied to a real contact. */
+  smsSender: string;
+  /** Original SMS timestamp (when the device received it), ISO string. */
+  smsTimestamp: string;
+  /** Key of the parser that matched, e.g. "HDFC", "SBI", "UPI_GENERIC". */
+  bankKey: string;
+  direction: TransactionDirection;
+  amount: number;
+  accountLast4?: string;
+  /** Existing Account matched from accountLast4, if any. */
+  matchedAccountId?: number;
+  merchant?: string;
+  upiId?: string;
+  referenceId?: string;
+  /** Existing Category suggested from merchant text, if any. */
+  suggestedCategoryId?: number;
+  /** Parser confidence score, 0-100. */
+  confidenceScore: number;
+  status: SmsTransactionStatus;
+  /**
+   * Original SMS text, kept ONLY while status is 'pending' so the user can verify it during
+   * review. Cleared automatically on approve/ignore (see PendingSmsTransactionRepository).
+   */
+  rawText?: string;
+  /** Set once the user approves and a real Transaction is created. */
+  resultingTransactionId?: number;
+  /** Human-readable parse notes, e.g. "Unrecognized bank format". Never contains SMS content. */
+  parseNotes?: string;
+}
+
+export interface MerchantCategoryMapping extends BaseEntity {
+  /** Case-insensitive substring matched against the parsed merchant/payee text. */
+  merchantPattern: string;
+  categoryId: number;
+  isActive: boolean;
+}
+
+export interface PendingSmsTransactionWithDetails extends PendingSmsTransaction {
+  matchedAccount?: Account;
+  suggestedCategory?: Category;
 }
