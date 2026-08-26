@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { SmsImport } from '@core/native/smsImportPlugin';
+import { drainNativeSmsQueue } from '@core/sms/nativeQueue';
 import { useImportSmsTextMutation } from '@app/api/smsImportApi';
 
 const POLL_INTERVAL_MS = 15_000;
@@ -28,14 +28,7 @@ export function useNativeSmsListener(): void {
       if (draining.current) return;
       draining.current = true;
       try {
-        const { messages } = await SmsImport.drainQueue();
-        for (const message of messages) {
-          await importSmsText({
-            sender: message.sender,
-            body: message.body,
-            timestamp: new Date(message.timestampMillis).toISOString(),
-          });
-        }
+        await drainNativeSmsQueue(importSmsText);
       } catch {
         // Native plugin unavailable or drain failed — nothing to surface here;
         // the next drain (on resume/poll) will pick the queue back up.

@@ -9,9 +9,12 @@ import type { SmsDirection } from '../types';
 
 const AMOUNT_RE = /(?:inr|rs\.?|₹)\s*([\d,]+(?:\.\d{1,2})?)/i;
 
-// Matches "A/c XX1234", "a/c no XXXXXX1234", "card ending 1234", "XX1234" style masks.
+// Matches "A/c XX1234", "a/c no XXXXXX1234", "A/C *1234", "card ending 1234", "XX1234" style masks.
+// The a/c-prefixed alternative accepts a single mask char (some banks, e.g.
+// HDFC's UPI "Sent" template, use just one "*") since the a/c keyword
+// context already makes a false match very unlikely.
 const LAST4_RE =
-  /(?:a\/?c|acct|account|card)[a-z\s.]{0,20}?(?:no\.?|number)?[a-z\s.]{0,10}?[x*]{2,}(\d{4})\b|\b[x*]{2,}(\d{4})\b|\bending\s+(\d{4})\b/i;
+  /(?:a\/?c|acct|account|card)[a-z\s.]{0,20}?(?:no\.?|number)?[a-z\s.]{0,10}?[x*]{1,}(\d{4})\b|\b[x*]{2,}(\d{4})\b|\bending\s+(\d{4})\b/i;
 
 const REF_RE =
   /(?:ref(?:erence)?(?:\s*no\.?|\s*id)?|txn\s*id|utr(?:\s*no)?|upi\s*ref(?:\s*no)?)[:\s#-]*([A-Za-z0-9]{6,25})/i;
@@ -19,7 +22,8 @@ const REF_RE =
 const UPI_ID_RE = /\b([a-zA-Z0-9.\-_]{2,64}@[a-zA-Z][a-zA-Z0-9]{1,64})\b/;
 
 const CREDIT_KEYWORDS = /\b(credited|received|deposited)\b/i;
-const DEBIT_KEYWORDS = /\b(debited|debit|spent|paid|withdrawn|purchase of)\b/i;
+// "sent" covers HDFC's UPI debit template ("Sent Rs.X From A/c ... To ...").
+const DEBIT_KEYWORDS = /\b(debited|debit|spent|paid|withdrawn|purchase of|sent)\b/i;
 
 // Text that follows these connectors is usually the merchant/payee.
 const MERCHANT_AFTER_RE =

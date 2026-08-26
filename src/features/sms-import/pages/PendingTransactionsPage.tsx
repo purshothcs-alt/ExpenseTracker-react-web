@@ -18,12 +18,15 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useMemo, useState } from 'react';
 import { useSnackbar } from 'notistack';
+import { Capacitor } from '@capacitor/core';
 import { PageHeader } from '@core/components/common/PageHeader';
 import { EmptyState } from '@core/components/common/EmptyState';
 import { ConfirmDialog } from '@core/components/common/ConfirmDialog';
 import { useAppSettings } from '@core/hooks/useAppSettings';
+import { drainNativeSmsQueue } from '@core/sms/nativeQueue';
 import { useGetTransactionTypesQuery } from '@app/api/transactionsApi';
 import {
   useGetPendingSmsTransactionsQuery,
@@ -48,6 +51,7 @@ export function PendingTransactionsPage() {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [pasteSender, setPasteSender] = useState('');
+  const [checkingNative, setCheckingNative] = useState(false);
 
   const { formatCurrency, formatDate } = useAppSettings();
   const { enqueueSnackbar } = useSnackbar();
@@ -120,6 +124,23 @@ export function PendingTransactionsPage() {
     }
   };
 
+  const handleCheckNow = async () => {
+    setCheckingNative(true);
+    try {
+      const count = await drainNativeSmsQueue(importSmsText);
+      enqueueSnackbar(
+        count === 0
+          ? 'No new SMS found'
+          : `Checked ${count} new SMS message${count === 1 ? '' : 's'}`,
+        { variant: count === 0 ? 'info' : 'success' },
+      );
+    } catch {
+      enqueueSnackbar('Failed to check for new SMS', { variant: 'error' });
+    } finally {
+      setCheckingNative(false);
+    }
+  };
+
   const handleImportPasted = async () => {
     if (!pasteText.trim()) return;
     try {
@@ -167,13 +188,24 @@ export function PendingTransactionsPage() {
         subtitle="Bank/UPI transactions detected from SMS, waiting for your review"
         icon={<SmsIcon fontSize="large" />}
         actions={
-          <Button
-            startIcon={<DeleteSweepIcon />}
-            onClick={() => setClearConfirmOpen(true)}
-            disabled={tab === 'pending'}
-          >
-            Clear History
-          </Button>
+          <Stack direction="row" spacing={1}>
+            {Capacitor.isNativePlatform() && (
+              <Button
+                startIcon={<RefreshIcon />}
+                onClick={handleCheckNow}
+                disabled={checkingNative}
+              >
+                {checkingNative ? 'Checking...' : 'Check now'}
+              </Button>
+            )}
+            <Button
+              startIcon={<DeleteSweepIcon />}
+              onClick={() => setClearConfirmOpen(true)}
+              disabled={tab === 'pending'}
+            >
+              Clear History
+            </Button>
+          </Stack>
         }
       />
 

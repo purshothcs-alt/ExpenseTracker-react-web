@@ -51,6 +51,7 @@ const TRANSACTION_KEYWORDS = [
   /\btransferred\b/i,
   /\bpurchase of\b/i,
   /\bdeposited\b/i,
+  /\bsent\b/i,
 ];
 
 const AMOUNT_PATTERN = /(?:inr|rs\.?|₹)\s?[\d,]+(?:\.\d{1,2})?/i;
