@@ -20,13 +20,16 @@ import {
   IconButton,
 } from '@mui/material';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import DownloadIcon from '@mui/icons-material/Download';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DonutLargeIcon from '@mui/icons-material/DonutLarge';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import CategoryIcon from '@mui/icons-material/Category';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import WorkIcon from '@mui/icons-material/Work';
 import CloseIcon from '@mui/icons-material/Close';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useState, useMemo } from 'react';
@@ -46,14 +49,18 @@ import {
   Legend,
 } from 'recharts';
 import { PageHeader } from '@core/components/common/PageHeader';
+import { ExportButtons, type ExportFormat } from '@core/components/common/ExportButtons';
+import { BreakdownReport } from '../components/BreakdownReport';
 import {
   useGetTransactionsQuery,
   useGetMonthlySummaryQuery,
   useGetCategoryTotalsQuery,
+  useGetGroupedTotalsQuery,
 } from '@app/api/transactionsApi';
 import { useGetAllCategoriesQuery } from '@app/api/categoriesApi';
 import { useAppSettings } from '@core/hooks/useAppSettings';
-import { exportToPDF, exportToCSV, exportToExcel } from '@core/utils/export';
+import { exportToPDF, exportToCSV, exportToExcel, type ExportColumn } from '@core/utils/export';
+import type { ReportGroupBy } from '@core/database/types';
 import { useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 
@@ -62,7 +69,29 @@ const REPORT_TABS = [
   { value: 'category', label: 'Category Report', icon: <DonutLargeIcon fontSize="small" /> },
   { value: 'cashflow', label: 'Cash Flow', icon: <ShowChartIcon fontSize="small" /> },
   { value: 'transactions', label: 'Transactions', icon: <ReceiptLongIcon fontSize="small" /> },
+  { value: 'by-account', label: 'By Account', icon: <AccountBalanceWalletIcon fontSize="small" /> },
+  { value: 'by-category', label: 'By Category', icon: <CategoryIcon fontSize="small" /> },
+  {
+    value: 'by-subCategory',
+    label: 'By Sub Category',
+    icon: <AccountTreeIcon fontSize="small" />,
+  },
+  { value: 'by-tag', label: 'By Tag', icon: <LocalOfferIcon fontSize="small" /> },
+  { value: 'by-payee', label: 'By Payee', icon: <StorefrontIcon fontSize="small" /> },
+  { value: 'by-project', label: 'By Project', icon: <WorkIcon fontSize="small" /> },
 ];
+
+// Report tabs that group income / expense by a single dimension
+const BREAKDOWNS: Record<string, { groupBy: ReportGroupBy; label: string }> = {
+  'by-account': { groupBy: 'account', label: 'Account' },
+  'by-category': { groupBy: 'category', label: 'Category' },
+  'by-subCategory': { groupBy: 'subCategory', label: 'Sub Category' },
+  'by-tag': { groupBy: 'tag', label: 'Tag' },
+  'by-payee': { groupBy: 'payee', label: 'Payee' },
+  'by-project': { groupBy: 'project', label: 'Project' },
+};
+
+type ExportRow = Record<string, string | number>;
 
 const CHART_COLORS = [
   '#2563EB',
@@ -110,6 +139,12 @@ export function ReportsPage() {
     { skip: drillCategoryId == null },
   );
 
+  const breakdown = BREAKDOWNS[reportType] as (typeof BREAKDOWNS)[string] | undefined;
+  const { data: groupedTotals = [] } = useGetGroupedTotalsQuery(
+    { groupBy: breakdown?.groupBy ?? 'account', startDate, endDate },
+    { skip: !breakdown },
+  );
+
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id!, c])), [categories]);
   const monthlyChartData = monthlySummary.map((d) => ({
     month: dayjs(d.month + '-01').format('MMM YY'),
@@ -141,136 +176,108 @@ export function ReportsPage() {
   const totalExpense = monthlySummary.reduce((s, m) => s + m.expense, 0);
   const netSavings = totalIncome - totalExpense;
 
-  const handleExportPDF = () => {
-    if (reportType === 'monthly') {
-      exportToPDF(
-        'Monthly Summary Report',
-        [
-          { header: 'Month', key: 'month' as never },
-          {
-            header: 'Income',
-            key: 'income' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          {
-            header: 'Expense',
-            key: 'expense' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          {
-            header: 'Net Savings',
-            key: 'net' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-        ],
-        monthlySummary.map((d) => ({
-          ...d,
-          month: dayjs(d.month + '-01').format('MMMM YYYY'),
-          net: d.income - d.expense,
-        })),
-        'monthly-summary',
+  // Rows and columns for the report currently on screen. `money` renders amounts:
+  // formatted currency for PDF, plain numbers for Excel / CSV.
+  const buildExport = (
+    money: (n: number) => string,
+  ): { title: string; filename: string; columns: ExportColumn<ExportRow>[]; rows: ExportRow[] } => {
+    const amount = (header: string, key: string): ExportColumn<ExportRow> => ({
+      header,
+      key,
+      format: (v) => money(v as number),
+    });
+
+    if (breakdown) {
+      const columns: ExportColumn<ExportRow>[] = [{ header: breakdown.label, key: 'name' }];
+      if (breakdown.groupBy === 'subCategory') columns.push({ header: 'Category', key: 'parent' });
+      columns.push(
+        { header: 'Transactions', key: 'count' },
+        amount('Income', 'income'),
+        amount('Expense', 'expense'),
+        amount('Net', 'net'),
       );
-    } else if (reportType === 'category') {
-      const exportTotal = filteredCategoryTotals.reduce((s, d) => s + d.total, 0);
-      exportToPDF(
-        'Category Expense Report',
-        [
-          { header: 'Category', key: 'name' as never },
-          {
-            header: 'Amount',
-            key: 'total' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          {
-            header: '% of Total',
-            key: 'pct' as never,
-            format: (v: unknown) => `${(v as number).toFixed(1)}%`,
-          },
-        ],
-        filteredCategoryTotals.map((d) => ({
-          name: catMap.get(d.categoryId)?.name || 'Unknown',
-          total: d.total,
-          pct: exportTotal > 0 ? (d.total / exportTotal) * 100 : 0,
+      return {
+        title: `${breakdown.label} Report (${formatDate(startDate)} to ${formatDate(endDate)})`,
+        filename: `${reportType}-report`,
+        columns,
+        rows: groupedTotals.map((g) => ({
+          name: g.name,
+          parent: g.parentName || '',
+          count: g.count,
+          income: g.income,
+          expense: g.expense,
+          net: g.income - g.expense,
         })),
-        'category-report',
-      );
-    } else if (reportType === 'cashflow') {
-      exportToPDF(
-        'Cash Flow Report',
-        [
-          { header: 'Month', key: 'month' as never },
-          {
-            header: 'Income',
-            key: 'income' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          {
-            header: 'Expense',
-            key: 'expense' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          {
-            header: 'Net',
-            key: 'net' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
+      };
+    }
+
+    if (reportType === 'monthly' || reportType === 'cashflow') {
+      const isMonthly = reportType === 'monthly';
+      return {
+        title: isMonthly ? 'Monthly Summary Report' : 'Cash Flow Report',
+        filename: isMonthly ? 'monthly-summary' : 'cashflow-report',
+        columns: [
+          { header: 'Month', key: 'month' },
+          amount('Income', 'income'),
+          amount('Expense', 'expense'),
+          amount(isMonthly ? 'Net Savings' : 'Net', 'net'),
         ],
-        monthlySummary.map((d) => ({
+        rows: monthlySummary.map((d) => ({
           month: dayjs(d.month + '-01').format('MMMM YYYY'),
           income: d.income,
           expense: d.expense,
           net: d.income - d.expense,
         })),
-        'cashflow-report',
-      );
-    } else {
-      exportToPDF(
-        'Transaction Report',
-        [
-          {
-            header: 'Date',
-            key: 'transactionDate' as never,
-            format: (v: unknown) => formatDate(v as string),
-          },
-          {
-            header: 'Amount',
-            key: 'amount' as never,
-            format: (v: unknown) => formatCurrency(v as number),
-          },
-          { header: 'Vendor', key: 'vendor' as never, format: (v: unknown) => String(v ?? '') },
-          { header: 'Notes', key: 'notes' as never, format: (v: unknown) => String(v ?? '') },
-        ],
-        transactions,
-        'transaction-report',
-      );
+      };
     }
+
+    if (reportType === 'category') {
+      const exportTotal = filteredCategoryTotals.reduce((s, d) => s + d.total, 0);
+      return {
+        title: 'Category Expense Report',
+        filename: 'category-report',
+        columns: [
+          { header: 'Category', key: 'name' },
+          amount('Amount', 'total'),
+          {
+            header: '% of Total',
+            key: 'pct',
+            format: (v) => `${(v as number).toFixed(1)}%`,
+          },
+        ],
+        rows: filteredCategoryTotals.map((d) => ({
+          name: catMap.get(d.categoryId)?.name || 'Unknown',
+          total: d.total,
+          pct: exportTotal > 0 ? (d.total / exportTotal) * 100 : 0,
+        })),
+      };
+    }
+
+    return {
+      title: 'Transaction Report',
+      filename: 'transaction-report',
+      columns: [
+        { header: 'Date', key: 'date' },
+        amount('Amount', 'amount'),
+        { header: 'Vendor', key: 'vendor' },
+        { header: 'Notes', key: 'notes' },
+      ],
+      rows: transactions.map((t) => ({
+        date: t.transactionDate,
+        amount: t.amount,
+        vendor: t.vendor || '',
+        notes: t.notes || '',
+      })),
+    };
   };
 
-  const handleExportExcel = () => {
-    exportToExcel(
-      reportType === 'transactions' ? 'Transactions' : 'Report',
-      [
-        { header: 'Date', key: 'transactionDate' as never },
-        { header: 'Amount', key: 'amount' as never, format: (v: unknown) => String(v) },
-        { header: 'Vendor', key: 'vendor' as never },
-        { header: 'Notes', key: 'notes' as never },
-      ],
-      transactions,
-      'financial-report',
+  const handleExport = (format: ExportFormat) => {
+    const { title, filename, columns, rows } = buildExport(
+      format === 'pdf' ? formatCurrency : String,
     );
-  };
-
-  const handleExportCSV = () => {
-    exportToCSV(
-      [
-        { header: 'Date', key: 'transactionDate' as never },
-        { header: 'Amount', key: 'amount' as never },
-        { header: 'Vendor', key: 'vendor' as never },
-        { header: 'Notes', key: 'notes' as never },
-      ],
-      transactions,
-      'financial-report',
-    );
+    if (format === 'pdf') exportToPDF(title, columns, rows, filename);
+    else if (format === 'excel') exportToExcel('Report', columns, rows, filename);
+    else exportToCSV(columns, rows, filename);
   };
 
   return (
@@ -281,30 +288,7 @@ export function ReportsPage() {
         subtitle="Financial analytics and reports"
         actions={
           <Box display="flex" gap={1} flexWrap="wrap" width={{ xs: '100%', sm: 'auto' }}>
-            <Button
-              variant="outlined"
-              startIcon={<PictureAsPdfIcon />}
-              size="small"
-              onClick={handleExportPDF}
-            >
-              PDF
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<TableChartIcon />}
-              size="small"
-              onClick={handleExportExcel}
-            >
-              Excel
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              size="small"
-              onClick={handleExportCSV}
-            >
-              CSV
-            </Button>
+            <ExportButtons formats={['pdf', 'excel', 'csv']} onExport={handleExport} />
           </Box>
         }
       />
@@ -768,6 +752,17 @@ export function ReportsPage() {
             </Grid>
           )}
         </Grid>
+      )}
+
+      {/* ── Breakdown by account / category / sub category / tag / payee / project ── */}
+      {breakdown && (
+        <BreakdownReport
+          groupBy={breakdown.groupBy}
+          label={breakdown.label}
+          rows={groupedTotals}
+          startDate={startDate}
+          endDate={endDate}
+        />
       )}
 
       {/* ── Cash Flow Report ── */}

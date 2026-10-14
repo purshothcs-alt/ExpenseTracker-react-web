@@ -1,22 +1,66 @@
 import db from '../db';
+import dayjs from 'dayjs';
 import type {
   Transaction,
   TransactionFilter,
+  TransactionListItem,
   PaginatedResult,
   TransactionWithDetails,
+  ReportGroupBy,
+  GroupedTotal,
 } from '../types';
 
+const NO_VALUE_LABELS: Record<ReportGroupBy, string> = {
+  account: '(No account)',
+  category: '(No category)',
+  subCategory: '(No sub category)',
+  tag: '(No tag)',
+  payee: '(No payee)',
+  project: '(No project)',
+};
+
 export class TransactionRepository {
-  async getFiltered(filter: TransactionFilter): Promise<PaginatedResult<Transaction>> {
+  async getFiltered(filter: TransactionFilter): Promise<PaginatedResult<TransactionListItem>> {
+    const filtered = await this.queryFiltered(filter);
+
+    const total = filtered.length;
+    const page = filter.page || 1;
+    const pageSize = filter.pageSize || 20;
+    const start = (page - 1) * pageSize;
+    const data = filtered.slice(start, start + pageSize);
+
+    return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  /** Every transaction matching the filter, ignoring pagination (used for "all records" exports). */
+  async getAllFiltered(filter: TransactionFilter): Promise<TransactionListItem[]> {
+    return this.queryFiltered(filter);
+  }
+
+  private async queryFiltered(filter: TransactionFilter): Promise<TransactionListItem[]> {
     let collection = db.transactions.toCollection();
 
     if (filter.accountId) {
       collection = db.transactions.where('accountId').equals(filter.accountId);
     }
 
-    const allItems = await collection.toArray();
+    const [allItems, txTags] = await Promise.all([
+      collection.toArray(),
+      db.transactionTags.toArray(),
+    ]);
 
-    let filtered = allItems.filter((t) => {
+    const tagsByTx = new Map<number, number[]>();
+    txTags.forEach((tt) => {
+      const list = tagsByTx.get(tt.transactionId);
+      if (list) list.push(tt.tagId);
+      else tagsByTx.set(tt.transactionId, [tt.tagId]);
+    });
+
+    const vendor = filter.vendor?.trim().toLowerCase();
+    const searchTerms = (filter.search || '').toLowerCase().split(/\s+/).filter(Boolean);
+    const searchText = searchTerms.length > 0 ? await this.buildSearchText(tagsByTx) : undefined;
+
+    const filtered = allItems.filter((t) => {
       if (filter.startDate && t.transactionDate < filter.startDate) return false;
       if (filter.endDate && t.transactionDate > filter.endDate) return false;
       if (filter.transactionTypeId && t.transactionTypeId !== filter.transactionTypeId)
@@ -27,41 +71,192 @@ export class TransactionRepository {
         t.subCategoryId !== filter.categoryId
       )
         return false;
+      if (filter.subCategoryId && t.subCategoryId !== filter.subCategoryId) return false;
       if (filter.projectId && t.projectId !== filter.projectId) return false;
+      if (vendor && (t.vendor || '').trim().toLowerCase() !== vendor) return false;
       if (filter.minAmount !== undefined && t.amount < filter.minAmount) return false;
       if (filter.maxAmount !== undefined && t.amount > filter.maxAmount) return false;
-      if (filter.search) {
-        const s = filter.search.toLowerCase();
-        if (!t.notes?.toLowerCase().includes(s) && !t.vendor?.toLowerCase().includes(s))
-          return false;
+      if (filter.tagIds && filter.tagIds.length > 0) {
+        const txTagIds = tagsByTx.get(t.id!) || [];
+        if (!filter.tagIds.some((id) => txTagIds.includes(id))) return false;
+      }
+      if (searchText) {
+        const haystack = searchText(t);
+        if (!searchTerms.every((term) => haystack.includes(term))) return false;
       }
       return true;
     });
 
-    if (filter.tagIds && filter.tagIds.length > 0) {
-      const taggedTxIds = new Set(
-        (await db.transactionTags.where('tagId').anyOf(filter.tagIds).toArray()).map(
-          (tt) => tt.transactionId,
-        ),
-      );
-      filtered = filtered.filter((t) => taggedTxIds.has(t.id!));
-    }
-
     const sortBy = (filter.sortBy || 'transactionDate') as keyof Transaction;
-    const sortOrder = filter.sortOrder || 'desc';
+    const dir = (filter.sortOrder || 'desc') === 'desc' ? -1 : 1;
     filtered.sort((a, b) => {
       const aVal = a[sortBy] as string | number;
       const bVal = b[sortBy] as string | number;
-      return sortOrder === 'desc' ? (aVal < bVal ? 1 : -1) : aVal > bVal ? 1 : -1;
+      if (aVal === bVal) return ((a.id || 0) - (b.id || 0)) * dir;
+      return (aVal > bVal ? 1 : -1) * dir;
     });
 
-    const total = filtered.length;
-    const page = filter.page || 1;
-    const pageSize = filter.pageSize || 20;
-    const start = (page - 1) * pageSize;
-    const data = filtered.slice(start, start + pageSize);
+    return filtered.map((t) => ({ ...t, tagIds: tagsByTx.get(t.id!) || [] }));
+  }
 
-    return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  /**
+   * Builds the lowercase text a free-text search is matched against, covering every
+   * column shown for a transaction (names are resolved from their lookup tables).
+   */
+  private async buildSearchText(
+    tagsByTx: Map<number, number[]>,
+  ): Promise<(t: Transaction) => string> {
+    const [accounts, txTypes, categories, tags, projects] = await Promise.all([
+      db.accounts.toArray(),
+      db.transactionTypes.toArray(),
+      db.categories.toArray(),
+      db.tags.toArray(),
+      db.projects.toArray(),
+    ]);
+    const accName = new Map(accounts.map((a) => [a.id!, a.name]));
+    const typeName = new Map(txTypes.map((t) => [t.id!, t.name]));
+    const catName = new Map(categories.map((c) => [c.id!, c.name]));
+    const tagName = new Map(tags.map((t) => [t.id!, t.name]));
+    const projName = new Map(projects.map((p) => [p.id!, p.name]));
+
+    return (t) => {
+      const date = dayjs(t.transactionDate);
+      return [
+        t.notes,
+        t.vendor,
+        t.referenceNumber,
+        t.transactionDate,
+        date.isValid() ? date.format('DD/MM/YYYY DD-MM-YYYY DD MMM YYYY MMMM') : '',
+        String(t.amount),
+        t.amount.toFixed(2),
+        accName.get(t.accountId),
+        t.toAccountId ? accName.get(t.toAccountId) : '',
+        typeName.get(t.transactionTypeId),
+        t.categoryId ? catName.get(t.categoryId) : '',
+        t.subCategoryId ? catName.get(t.subCategoryId) : '',
+        t.projectId ? projName.get(t.projectId) : '',
+        ...(tagsByTx.get(t.id!) || []).map((id) => tagName.get(id)),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    };
+  }
+
+  /** Distinct vendor / payee names used on transactions, for filter pickers. */
+  async getVendors(): Promise<string[]> {
+    const seen = new Map<string, string>();
+    await db.transactions.each((t) => {
+      const name = t.vendor?.trim();
+      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
+    });
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  }
+
+  /**
+   * Income / expense totals for a date range grouped by one dimension. Transfers are
+   * excluded. A transaction with several tags counts towards each of its tags.
+   */
+  async getGroupedTotals(
+    groupBy: ReportGroupBy,
+    startDate: string,
+    endDate: string,
+  ): Promise<GroupedTotal[]> {
+    const txTypes = await db.transactionTypes.toArray();
+    const creditTypes = new Set(txTypes.filter((t) => t.direction === 'credit').map((t) => t.id!));
+    const debitTypes = new Set(txTypes.filter((t) => t.direction === 'debit').map((t) => t.id!));
+
+    const txs = await db.transactions
+      .filter(
+        (t) =>
+          t.transactionDate >= startDate &&
+          t.transactionDate <= endDate &&
+          (creditTypes.has(t.transactionTypeId) || debitTypes.has(t.transactionTypeId)),
+      )
+      .toArray();
+
+    const meta = new Map<string, { name: string; color?: string; parentName?: string }>();
+    const tagsByTx = new Map<number, number[]>();
+
+    if (groupBy === 'account') {
+      (await db.accounts.toArray()).forEach((a) => meta.set(String(a.id), { name: a.name }));
+    } else if (groupBy === 'category' || groupBy === 'subCategory') {
+      const categories = await db.categories.toArray();
+      const byId = new Map(categories.map((c) => [c.id!, c]));
+      categories.forEach((c) =>
+        meta.set(String(c.id), {
+          name: c.name,
+          color: c.color,
+          parentName: c.parentId ? byId.get(c.parentId)?.name : undefined,
+        }),
+      );
+    } else if (groupBy === 'project') {
+      (await db.projects.toArray()).forEach((p) =>
+        meta.set(String(p.id), { name: p.name, color: p.color }),
+      );
+    } else if (groupBy === 'tag') {
+      (await db.tags.toArray()).forEach((t) =>
+        meta.set(String(t.id), { name: t.name, color: t.color }),
+      );
+      (await db.transactionTags.toArray()).forEach((tt) => {
+        const list = tagsByTx.get(tt.transactionId);
+        if (list) list.push(tt.tagId);
+        else tagsByTx.set(tt.transactionId, [tt.tagId]);
+      });
+    }
+
+    const keysOf = (t: Transaction): string[] => {
+      switch (groupBy) {
+        case 'account':
+          return [String(t.accountId)];
+        case 'category':
+          return [t.categoryId ? String(t.categoryId) : ''];
+        case 'subCategory':
+          return [t.subCategoryId ? String(t.subCategoryId) : ''];
+        case 'project':
+          return [t.projectId ? String(t.projectId) : ''];
+        case 'payee': {
+          const name = t.vendor?.trim();
+          if (!name) return [''];
+          const key = name.toLowerCase();
+          if (!meta.has(key)) meta.set(key, { name });
+          return [key];
+        }
+        case 'tag': {
+          const ids = tagsByTx.get(t.id!) || [];
+          return ids.length > 0 ? ids.map(String) : [''];
+        }
+      }
+    };
+
+    const groups = new Map<string, GroupedTotal>();
+    txs.forEach((t) => {
+      keysOf(t).forEach((key) => {
+        let group = groups.get(key);
+        if (!group) {
+          const info = key ? meta.get(key) : undefined;
+          group = {
+            key,
+            name: key ? info?.name || 'Unknown' : NO_VALUE_LABELS[groupBy],
+            color: info?.color,
+            parentName: info?.parentName,
+            income: 0,
+            expense: 0,
+            count: 0,
+          };
+          groups.set(key, group);
+        }
+        if (creditTypes.has(t.transactionTypeId)) group.income += t.amount;
+        else group.expense += t.amount;
+        group.count += 1;
+      });
+    });
+
+    // Largest spend first; the "no value" bucket always goes last.
+    return [...groups.values()].sort((a, b) => {
+      if (!a.key !== !b.key) return a.key ? -1 : 1;
+      return b.expense - a.expense || b.income - a.income;
+    });
   }
 
   async getWithDetails(id: number): Promise<TransactionWithDetails | undefined> {

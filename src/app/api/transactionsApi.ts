@@ -4,6 +4,9 @@ import db from '@core/database/db';
 import type {
   Transaction,
   TransactionFilter,
+  TransactionListItem,
+  ReportGroupBy,
+  GroupedTotal,
   PaginatedResult,
   TransactionWithDetails,
   TransactionType,
@@ -11,7 +14,7 @@ import type {
 
 export const transactionsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getTransactions: builder.query<PaginatedResult<Transaction>, TransactionFilter>({
+    getTransactions: builder.query<PaginatedResult<TransactionListItem>, TransactionFilter>({
       queryFn: async (filter) => {
         try {
           const data = await transactionRepository.getFiltered(filter);
@@ -21,6 +24,45 @@ export const transactionsApi = baseApi.injectEndpoints({
         }
       },
       providesTags: ['Transaction'],
+    }),
+
+    getAllTransactions: builder.query<TransactionListItem[], TransactionFilter>({
+      queryFn: async (filter) => {
+        try {
+          const data = await transactionRepository.getAllFiltered(filter);
+          return { data };
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
+      },
+      providesTags: ['Transaction'],
+    }),
+
+    getVendors: builder.query<string[], void>({
+      queryFn: async () => {
+        try {
+          const data = await transactionRepository.getVendors();
+          return { data };
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
+      },
+      providesTags: ['Transaction'],
+    }),
+
+    getGroupedTotals: builder.query<
+      GroupedTotal[],
+      { groupBy: ReportGroupBy; startDate: string; endDate: string }
+    >({
+      queryFn: async ({ groupBy, startDate, endDate }) => {
+        try {
+          const data = await transactionRepository.getGroupedTotals(groupBy, startDate, endDate);
+          return { data };
+        } catch (e) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(e) } };
+        }
+      },
+      providesTags: ['Transaction', 'Account', 'Category', 'Tag', 'Project'],
     }),
 
     getTransactionById: builder.query<TransactionWithDetails | undefined, number>({
@@ -213,6 +255,9 @@ export const transactionsApi = baseApi.injectEndpoints({
 
 export const {
   useGetTransactionsQuery,
+  useLazyGetAllTransactionsQuery,
+  useGetVendorsQuery,
+  useGetGroupedTotalsQuery,
   useGetTransactionByIdQuery,
   useGetRecentTransactionsQuery,
   useGetMonthlySummaryQuery,

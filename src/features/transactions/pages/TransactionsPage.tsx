@@ -19,6 +19,9 @@ import {
   Typography,
   InputAdornment,
   Skeleton,
+  Autocomplete,
+  Badge,
+  Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -26,26 +29,33 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { useState, useMemo } from 'react';
 import { PageHeader } from '@core/components/common/PageHeader';
 import { EmptyState } from '@core/components/common/EmptyState';
 import { ConfirmDialog } from '@core/components/common/ConfirmDialog';
+import {
+  ExportButtons,
+  type ExportFormat,
+  type ExportScope,
+} from '@core/components/common/ExportButtons';
 import { TransactionForm } from '../components/TransactionForm';
 import {
   useGetTransactionsQuery,
+  useLazyGetAllTransactionsQuery,
+  useGetVendorsQuery,
   useDeleteTransactionMutation,
   useBulkDeleteTransactionsMutation,
   useDuplicateTransactionMutation,
   useGetTransactionTypesQuery,
 } from '@app/api/transactionsApi';
 import { useGetAccountsQuery } from '@app/api/accountsApi';
-import { useGetAllCategoriesQuery } from '@app/api/categoriesApi';
+import { useGetAllCategoriesQuery, useGetAllTagsQuery } from '@app/api/categoriesApi';
+import { useGetAllProjectsQuery } from '@app/api/projectsApi';
 import { useAppSettings } from '@core/hooks/useAppSettings';
 import { useDebounce } from '@core/hooks/useDebounce';
-import { exportToCSV, exportToExcel } from '@core/utils/export';
-import type { TransactionFilter, Transaction } from '@core/database/types';
+import { exportToCSV, exportToExcel, type ExportColumn } from '@core/utils/export';
+import type { TransactionFilter, TransactionListItem } from '@core/database/types';
 import { useSnackbar } from 'notistack';
 import dayjs from 'dayjs';
 
@@ -54,7 +64,7 @@ export function TransactionsPage() {
   const { enqueueSnackbar } = useSnackbar();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editTx, setEditTx] = useState<Transaction | undefined>();
+  const [editTx, setEditTx] = useState<TransactionListItem | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
@@ -65,27 +75,52 @@ export function TransactionsPage() {
   const [filterAccount, setFilterAccount] = useState('');
   const [filterStart, setFilterStart] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [filterEnd, setFilterEnd] = useState(dayjs().endOf('month').format('YYYY-MM-DD'));
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<number | null>(null);
+  const [filterSubCategory, setFilterSubCategory] = useState<number | null>(null);
+  const [filterTags, setFilterTags] = useState<number[]>([]);
+  const [filterPayee, setFilterPayee] = useState<string | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const filter: TransactionFilter = useMemo(
+  const baseFilter: TransactionFilter = useMemo(
     () => ({
       search: debouncedSearch || undefined,
       transactionTypeId: filterType ? Number(filterType) : undefined,
       accountId: filterAccount ? Number(filterAccount) : undefined,
+      categoryId: filterCategory ?? undefined,
+      subCategoryId: filterSubCategory ?? undefined,
+      tagIds: filterTags.length > 0 ? filterTags : undefined,
+      vendor: filterPayee || undefined,
       startDate: filterStart || undefined,
       endDate: filterEnd || undefined,
-      page: page + 1,
-      pageSize,
       sortOrder: 'desc',
     }),
-    [debouncedSearch, filterType, filterAccount, filterStart, filterEnd, page, pageSize],
+    [
+      debouncedSearch,
+      filterType,
+      filterAccount,
+      filterCategory,
+      filterSubCategory,
+      filterTags,
+      filterPayee,
+      filterStart,
+      filterEnd,
+    ],
+  );
+  const filter: TransactionFilter = useMemo(
+    () => ({ ...baseFilter, page: page + 1, pageSize }),
+    [baseFilter, page, pageSize],
   );
 
   const { data: result, isLoading } = useGetTransactionsQuery(filter);
+  const [fetchAllTransactions] = useLazyGetAllTransactionsQuery();
   const { data: txTypes = [] } = useGetTransactionTypesQuery();
   const { data: accounts = [] } = useGetAccountsQuery();
   const { data: categories = [] } = useGetAllCategoriesQuery();
+  const { data: tags = [] } = useGetAllTagsQuery();
+  const { data: projects = [] } = useGetAllProjectsQuery();
+  const { data: vendors = [] } = useGetVendorsQuery();
   const [deleteTransaction, { isLoading: deleting }] = useDeleteTransactionMutation();
   const [bulkDelete, { isLoading: bulkDeleting }] = useBulkDeleteTransactionsMutation();
   const [duplicate] = useDuplicateTransactionMutation();
@@ -96,6 +131,34 @@ export function TransactionsPage() {
   const catMap = useMemo(() => new Map(categories.map((c) => [c.id!, c])), [categories]);
   const typeMap = useMemo(() => new Map(txTypes.map((t) => [t.id!, t])), [txTypes]);
   const accMap = useMemo(() => new Map(accounts.map((a) => [a.id!, a])), [accounts]);
+  const tagMap = useMemo(() => new Map(tags.map((t) => [t.id!, t])), [tags]);
+  const projectMap = useMemo(() => new Map(projects.map((p) => [p.id!, p])), [projects]);
+
+  const parentCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
+  // Sub category choices follow the selected category filter
+  const subCategoryOptions = useMemo(
+    () =>
+      categories
+        .filter((c) => (filterCategory ? c.parentId === filterCategory : !!c.parentId))
+        .sort((a, b) =>
+          (catMap.get(a.parentId!)?.name ?? '').localeCompare(catMap.get(b.parentId!)?.name ?? ''),
+        ),
+    [categories, catMap, filterCategory],
+  );
+
+  const moreFilterCount =
+    (filterCategory ? 1 : 0) +
+    (filterSubCategory ? 1 : 0) +
+    (filterTags.length > 0 ? 1 : 0) +
+    (filterPayee ? 1 : 0);
+
+  const clearMoreFilters = () => {
+    setFilterCategory(null);
+    setFilterSubCategory(null);
+    setFilterTags([]);
+    setFilterPayee(null);
+    setPage(0);
+  };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
@@ -116,59 +179,57 @@ export function TransactionsPage() {
     enqueueSnackbar('Transaction duplicated', { variant: 'success' });
   };
 
-  const handleExportCSV = () => {
-    exportToCSV(
-      [
-        { header: 'Date', key: 'transactionDate' as never },
-        {
-          header: 'Type',
-          key: 'transactionTypeId' as never,
-          format: (v: unknown) => typeMap.get(v as number)?.name || '',
-        },
-        {
-          header: 'Account',
-          key: 'accountId' as never,
-          format: (v: unknown) => accMap.get(v as number)?.name || '',
-        },
-        {
-          header: 'Category',
-          key: 'categoryId' as never,
-          format: (v: unknown) => catMap.get(v as number)?.name || '',
-        },
-        { header: 'Amount', key: 'amount' as never, format: (v: unknown) => String(v) },
-        { header: 'Notes', key: 'notes' as never },
-      ],
-      transactions,
-      'transactions',
-    );
-  };
+  const exportColumns: ExportColumn<TransactionListItem>[] = [
+    { header: 'Date', key: 'transactionDate' },
+    {
+      header: 'Type',
+      key: 'transactionTypeId',
+      format: (v) => typeMap.get(v as number)?.name || '',
+    },
+    { header: 'Account', key: 'accountId', format: (v) => accMap.get(v as number)?.name || '' },
+    {
+      header: 'To Account',
+      key: 'toAccountId',
+      format: (v) => accMap.get(v as number)?.name || '',
+    },
+    { header: 'Category', key: 'categoryId', format: (v) => catMap.get(v as number)?.name || '' },
+    {
+      header: 'Sub Category',
+      key: 'subCategoryId',
+      format: (v) => catMap.get(v as number)?.name || '',
+    },
+    { header: 'Payee', key: 'vendor' },
+    {
+      header: 'Tags',
+      key: 'tagIds',
+      format: (v) =>
+        (v as number[])
+          .map((id) => tagMap.get(id)?.name)
+          .filter(Boolean)
+          .join(', '),
+    },
+    {
+      header: 'Project',
+      key: 'projectId',
+      format: (v) => projectMap.get(v as number)?.name || '',
+    },
+    { header: 'Amount', key: 'amount', format: (v) => String(v) },
+    { header: 'Reference #', key: 'referenceNumber' },
+    { header: 'Notes', key: 'notes' },
+  ];
 
-  const handleExportExcel = () => {
-    exportToExcel(
-      'Transactions',
-      [
-        { header: 'Date', key: 'transactionDate' as never },
-        {
-          header: 'Type',
-          key: 'transactionTypeId' as never,
-          format: (v: unknown) => typeMap.get(v as number)?.name || '',
-        },
-        {
-          header: 'Account',
-          key: 'accountId' as never,
-          format: (v: unknown) => accMap.get(v as number)?.name || '',
-        },
-        {
-          header: 'Category',
-          key: 'categoryId' as never,
-          format: (v: unknown) => catMap.get(v as number)?.name || '',
-        },
-        { header: 'Amount', key: 'amount' as never, format: (v: unknown) => String(v) },
-        { header: 'Notes', key: 'notes' as never },
-      ],
-      transactions,
-      'transactions',
-    );
+  const handleExport = async (format: ExportFormat, scope: ExportScope) => {
+    try {
+      const rows =
+        scope === 'page' ? transactions : await fetchAllTransactions(baseFilter).unwrap();
+      if (format === 'csv') exportToCSV(exportColumns, rows, 'transactions');
+      else exportToExcel('Transactions', exportColumns, rows, 'transactions');
+      enqueueSnackbar(`Exported ${rows.length} transaction${rows.length !== 1 ? 's' : ''}`, {
+        variant: 'success',
+      });
+    } catch {
+      enqueueSnackbar('Export failed', { variant: 'error' });
+    }
   };
 
   const isAllSelected = transactions.length > 0 && selectedIds.length === transactions.length;
@@ -197,22 +258,12 @@ export function TransactionsPage() {
                 Delete ({selectedIds.length})
               </Button>
             )}
-            <Button
-              variant="outlined"
-              startIcon={<FileDownloadIcon />}
-              size="small"
-              onClick={handleExportCSV}
-            >
-              CSV
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<FileDownloadIcon />}
-              size="small"
-              onClick={handleExportExcel}
-            >
-              Excel
-            </Button>
+            <ExportButtons
+              formats={['csv', 'excel']}
+              onExport={handleExport}
+              pageCount={transactions.length}
+              totalCount={total}
+            />
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -234,7 +285,10 @@ export function TransactionsPage() {
               size="small"
               placeholder="Search transactions..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0);
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -249,7 +303,10 @@ export function TransactionsPage() {
               select
               label="Type"
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 160 }}
             >
               <MenuItem value="">
@@ -266,7 +323,10 @@ export function TransactionsPage() {
               select
               label="Account"
               value={filterAccount}
-              onChange={(e) => setFilterAccount(e.target.value)}
+              onChange={(e) => {
+                setFilterAccount(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 160 }}
             >
               <MenuItem value="">
@@ -303,11 +363,76 @@ export function TransactionsPage() {
               sx={{ width: 160 }}
             />
             <Tooltip title="More Filters">
-              <IconButton size="small">
-                <FilterListIcon />
+              <IconButton
+                size="small"
+                color={moreFiltersOpen || moreFilterCount > 0 ? 'primary' : 'default'}
+                onClick={() => setMoreFiltersOpen((o) => !o)}
+              >
+                <Badge badgeContent={moreFilterCount} color="primary">
+                  <FilterListIcon />
+                </Badge>
               </IconButton>
             </Tooltip>
           </Box>
+          <Collapse in={moreFiltersOpen} unmountOnExit>
+            <Box display="flex" gap={2} flexWrap="wrap" alignItems="center" mt={2}>
+              <Autocomplete
+                size="small"
+                options={parentCategories}
+                getOptionLabel={(c) => c.name}
+                value={parentCategories.find((c) => c.id === filterCategory) ?? null}
+                onChange={(_, c) => {
+                  setFilterCategory(c?.id ?? null);
+                  setFilterSubCategory(null);
+                  setPage(0);
+                }}
+                renderInput={(params) => <TextField {...params} label="Category" />}
+                sx={{ minWidth: 200 }}
+              />
+              <Autocomplete
+                size="small"
+                options={subCategoryOptions}
+                getOptionLabel={(c) => c.name}
+                groupBy={filterCategory ? undefined : (c) => catMap.get(c.parentId!)?.name ?? ''}
+                value={subCategoryOptions.find((c) => c.id === filterSubCategory) ?? null}
+                onChange={(_, c) => {
+                  setFilterSubCategory(c?.id ?? null);
+                  setPage(0);
+                }}
+                renderInput={(params) => <TextField {...params} label="Sub Category" />}
+                sx={{ minWidth: 200 }}
+              />
+              <Autocomplete
+                size="small"
+                multiple
+                options={tags}
+                getOptionLabel={(t) => t.name}
+                value={tags.filter((t) => filterTags.includes(t.id!))}
+                onChange={(_, val) => {
+                  setFilterTags(val.map((t) => t.id!));
+                  setPage(0);
+                }}
+                renderInput={(params) => <TextField {...params} label="Tags" />}
+                sx={{ minWidth: 200 }}
+              />
+              <Autocomplete
+                size="small"
+                options={vendors}
+                value={filterPayee}
+                onChange={(_, v) => {
+                  setFilterPayee(v);
+                  setPage(0);
+                }}
+                renderInput={(params) => <TextField {...params} label="Payee" />}
+                sx={{ minWidth: 200 }}
+              />
+              {moreFilterCount > 0 && (
+                <Button size="small" onClick={clearMoreFilters}>
+                  Clear filters
+                </Button>
+              )}
+            </Box>
+          </Collapse>
         </CardContent>
       </Card>
 
@@ -328,6 +453,7 @@ export function TransactionsPage() {
                 <TableCell>Type</TableCell>
                 <TableCell>Account</TableCell>
                 <TableCell>Category</TableCell>
+                <TableCell>Payee</TableCell>
                 <TableCell>Notes</TableCell>
                 <TableCell align="right">Amount</TableCell>
                 <TableCell align="center">Actions</TableCell>
@@ -337,7 +463,7 @@ export function TransactionsPage() {
               {isLoading ? (
                 Array.from({ length: 10 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((__, j) => (
+                    {Array.from({ length: 9 }).map((__, j) => (
                       <TableCell key={j}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -346,7 +472,7 @@ export function TransactionsPage() {
                 ))
               ) : transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <EmptyState
                       title="No transactions found"
                       description="Try adjusting your filters or add a new transaction."
@@ -358,6 +484,7 @@ export function TransactionsPage() {
                   const txType = typeMap.get(tx.transactionTypeId);
                   const account = accMap.get(tx.accountId);
                   const category = tx.categoryId ? catMap.get(tx.categoryId) : undefined;
+                  const subCategory = tx.subCategoryId ? catMap.get(tx.subCategoryId) : undefined;
                   const isDebit = txType?.direction === 'debit';
                   const isTransfer = txType?.direction === 'transfer';
 
@@ -392,16 +519,44 @@ export function TransactionsPage() {
                       <TableCell>
                         {category && (
                           <Chip
-                            label={category.name}
+                            label={
+                              subCategory ? `${category.name} › ${subCategory.name}` : category.name
+                            }
                             size="small"
                             sx={{ height: 18, fontSize: '0.65rem' }}
                           />
                         )}
                       </TableCell>
+                      <TableCell sx={{ maxWidth: 160 }}>
+                        <Typography variant="caption" noWrap display="block">
+                          {tx.vendor || '—'}
+                        </Typography>
+                      </TableCell>
                       <TableCell sx={{ maxWidth: 200 }}>
                         <Typography variant="caption" noWrap display="block">
-                          {tx.notes || tx.vendor || '—'}
+                          {tx.notes || '—'}
                         </Typography>
+                        {tx.tagIds.length > 0 && (
+                          <Box display="flex" gap={0.5} flexWrap="wrap" mt={0.25}>
+                            {tx.tagIds.map((id) => {
+                              const tag = tagMap.get(id);
+                              return tag ? (
+                                <Chip
+                                  key={id}
+                                  label={tag.name}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{
+                                    height: 16,
+                                    fontSize: '0.6rem',
+                                    color: tag.color,
+                                    borderColor: tag.color,
+                                  }}
+                                />
+                              ) : null;
+                            })}
+                          </Box>
+                        )}
                       </TableCell>
                       <TableCell align="right">
                         <Typography

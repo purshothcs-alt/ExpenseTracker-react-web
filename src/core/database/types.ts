@@ -419,9 +419,13 @@ export interface TransactionFilter {
   endDate?: string;
   accountId?: number;
   transactionTypeId?: number;
+  /** Matches either the transaction's category or its sub category. */
   categoryId?: number;
+  subCategoryId?: number;
   tagIds?: number[];
   projectId?: number;
+  /** Exact (case-insensitive) vendor / payee match. */
+  vendor?: string;
   minAmount?: number;
   maxAmount?: number;
   search?: string;
@@ -429,6 +433,23 @@ export interface TransactionFilter {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+}
+
+export interface TransactionListItem extends Transaction {
+  tagIds: number[];
+}
+
+export type ReportGroupBy = 'account' | 'category' | 'subCategory' | 'tag' | 'payee' | 'project';
+
+export interface GroupedTotal {
+  /** Entity id (or normalized payee name) as a string; empty for transactions without a value. */
+  key: string;
+  name: string;
+  color?: string;
+  parentName?: string;
+  income: number;
+  expense: number;
+  count: number;
 }
 
 export interface PaginatedResult<T> {

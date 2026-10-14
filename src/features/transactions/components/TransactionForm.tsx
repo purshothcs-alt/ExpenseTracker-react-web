@@ -34,9 +34,22 @@ import type { Transaction, Tag, CategoryType, Category } from '@core/database/ty
 type CategoryOption =
   | Category
   | { __addNew: true; name: string; id?: undefined; color?: undefined };
-const catFilter = createFilterOptions<CategoryOption>();
+// Matches the typed text against the category name, ignoring case, accents and
+// stray leading/trailing spaces added by mobile keyboards.
+const catFilter = createFilterOptions<CategoryOption>({
+  trim: true,
+  stringify: (opt) => ('__addNew' in opt ? '' : opt.name),
+});
+
+/** The single option whose name equals the typed text, if there is exactly one. */
+const findExactMatch = (options: Category[], typed: string): Category | undefined => {
+  const text = typed.trim().toLowerCase();
+  if (!text) return undefined;
+  const matches = options.filter((o) => o.name.trim().toLowerCase() === text);
+  return matches.length === 1 ? matches[0] : undefined;
+};
 import { useSnackbar } from 'notistack';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FocusEvent } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import { QuickAddCategoryDialog } from './QuickAddCategoryDialog';
 
@@ -96,6 +109,17 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const isTransfer = selectedType?.direction === 'transfer';
   const isExpenseType = selectedType?.direction === 'debit';
 
+  // New transactions start as an expense
+  const defaultTypeId = (
+    txTypes.find((t) => t.direction === 'debit' && t.name.toLowerCase() === 'expense') ??
+    txTypes.find((t) => t.direction === 'debit')
+  )?.id;
+  useEffect(() => {
+    if (open && !transaction?.id && !selectedTypeId && defaultTypeId) {
+      setValue('transactionTypeId', defaultTypeId);
+    }
+  }, [open, transaction?.id, selectedTypeId, defaultTypeId, setValue]);
+
   const newCategoryType: CategoryType = selectedType?.direction === 'credit' ? 'income' : 'expense';
 
   const parentCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
@@ -103,10 +127,11 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const selectedCategoryId = watch('categoryId');
   const selectedSubCategoryId = watch('subCategoryId');
 
-  // Build a label for each subcategory showing its parent for context
-  const parentMap = useMemo(
-    () => new Map(parentCategories.map((c) => [c.id!, c])),
-    [parentCategories],
+  // Sub categories belong to the chosen category; none are offered until one is chosen
+  const subCategoryOptions = useMemo(
+    () =>
+      selectedCategoryId ? allSubCategories.filter((c) => c.parentId === selectedCategoryId) : [],
+    [allSubCategories, selectedCategoryId],
   );
 
   // Clear subCategory when category changes to a different parent
@@ -301,12 +326,19 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                           !('__addNew' in opt) && !('__addNew' in val) && opt.id === val.id
                         }
                         value={parentCategories.find((c) => c.id === field.value) ?? null}
+                        autoHighlight
                         onChange={(_, newVal) => {
                           if (newVal && '__addNew' in newVal) {
                             setQuickAddCategoryOpen(true);
                           } else {
                             field.onChange(newVal?.id ?? null);
                           }
+                        }}
+                        // Typing a full name and leaving the field selects it
+                        onBlur={(e: FocusEvent<HTMLDivElement>) => {
+                          const typed = (e.target as HTMLInputElement).value ?? '';
+                          const match = findExactMatch(parentCategories, typed);
+                          if (match && match.id !== field.value) field.onChange(match.id);
                         }}
                         filterOptions={(options, params) => {
                           const filtered = catFilter(options as CategoryOption[], params);
@@ -361,34 +393,32 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                     control={control}
                     render={({ field }) => (
                       <Autocomplete<CategoryOption>
-                        options={allSubCategories as CategoryOption[]}
-                        getOptionLabel={(opt) => {
-                          if ('__addNew' in opt) return opt.name;
-                          const parent = parentMap.get(opt.parentId!);
-                          return parent ? `${opt.name} · ${parent.name}` : opt.name;
-                        }}
+                        options={subCategoryOptions as CategoryOption[]}
+                        getOptionLabel={(opt) => opt.name}
                         isOptionEqualToValue={(opt, val) =>
                           !('__addNew' in opt) && !('__addNew' in val) && opt.id === val.id
                         }
                         value={allSubCategories.find((c) => c.id === field.value) ?? null}
+                        autoHighlight
+                        disabled={!selectedCategoryId}
                         onChange={(_, newVal) => {
                           if (newVal && '__addNew' in newVal) {
                             setQuickAddSubCategoryOpen(true);
                             return;
                           }
                           field.onChange(newVal?.id ?? null);
-                          if (newVal?.parentId) {
-                            setValue('categoryId', newVal.parentId);
-                          }
+                        }}
+                        // Typing a full name and leaving the field selects it
+                        onBlur={(e: FocusEvent<HTMLDivElement>) => {
+                          const typed = (e.target as HTMLInputElement).value ?? '';
+                          const match = findExactMatch(subCategoryOptions, typed);
+                          if (match && match.id !== field.value) field.onChange(match.id);
                         }}
                         filterOptions={(options, params) => {
                           const filtered = catFilter(options, params);
                           filtered.push({ __addNew: true, name: '+ Add New Sub Category' });
                           return filtered;
                         }}
-                        groupBy={(opt) =>
-                          '__addNew' in opt ? '' : (parentMap.get(opt.parentId!)?.name ?? '')
-                        }
                         renderOption={(props, opt) => {
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           const { key, ...rest } = props as any;
@@ -426,7 +456,11 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
                           );
                         }}
                         renderInput={(params) => (
-                          <TextField {...params} label="Sub Category (optional)" />
+                          <TextField
+                            {...params}
+                            label="Sub Category (optional)"
+                            helperText={selectedCategoryId ? undefined : 'Select a category first'}
+                          />
                         )}
                       />
                     )}
