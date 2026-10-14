@@ -20,12 +20,24 @@ import { saveSetting } from '@app/settingsSlice';
 import { useSnackbar } from 'notistack';
 import { useTranslation } from 'react-i18next';
 import { setLanguage } from '@localization/i18n';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { ThemeMode } from '@core/database/types';
 import { THEMES } from '@core/theme/theme';
 import { Capacitor } from '@capacitor/core';
 import { SmsImport } from '@core/native/smsImportPlugin';
 import SmsIcon from '@mui/icons-material/Sms';
+import BackupIcon from '@mui/icons-material/Backup';
+import RestoreIcon from '@mui/icons-material/Restore';
+import dayjs from 'dayjs';
+import db from '@core/database/db';
+import { ConfirmDialog } from '@core/components/common/ConfirmDialog';
+import {
+  createBackup,
+  parseBackup,
+  restoreBackup,
+  saveTextFile,
+  type BackupFile,
+} from '@core/utils/backup';
 
 type SmsPermissionState = 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale' | 'unknown';
 
@@ -82,6 +94,66 @@ export function SettingsPage() {
       );
     } catch {
       enqueueSnackbar('Failed to request SMS permission', { variant: 'error' });
+    }
+  };
+
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<BackupFile | null>(null);
+  const restoreInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    db.settings
+      .get('lastBackupAt')
+      .then((row) => setLastBackupAt(row?.value ?? null))
+      .catch(() => setLastBackupAt(null));
+  }, []);
+
+  const handleBackup = async () => {
+    setBackupBusy(true);
+    try {
+      const backup = await createBackup();
+      const filename = `myexpenses-backup-${dayjs().format('YYYY-MM-DD-HHmm')}.json`;
+      const saved = await saveTextFile(filename, JSON.stringify(backup));
+      if (!saved) return;
+      await db.settings.put({
+        key: 'lastBackupAt',
+        value: backup.createdAt,
+        updatedAt: backup.createdAt,
+      });
+      setLastBackupAt(backup.createdAt);
+      enqueueSnackbar('Backup saved. Keep a copy outside this device.', { variant: 'success' });
+    } catch {
+      enqueueSnackbar('Backup failed', { variant: 'error' });
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleRestoreFileChosen = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setPendingRestore(parseBackup(await file.text()));
+    } catch (err) {
+      enqueueSnackbar(err instanceof Error ? err.message : 'Could not read the backup file', {
+        variant: 'error',
+      });
+    }
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!pendingRestore) return;
+    setBackupBusy(true);
+    try {
+      await restoreBackup(pendingRestore);
+      // Reload so settings, language and every cached list pick up the restored data
+      window.location.reload();
+    } catch {
+      enqueueSnackbar('Restore failed. Your existing data was not changed.', { variant: 'error' });
+      setBackupBusy(false);
+      setPendingRestore(null);
     }
   };
 
@@ -399,6 +471,52 @@ export function SettingsPage() {
           </Grid>
         )}
 
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} mb={1}>
+                Backup &amp; Restore
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                All data is stored only on this device and is lost if the app&apos;s storage or the
+                browser&apos;s site data is cleared. Save a backup file regularly and keep a copy
+                somewhere else, such as Google Drive or email. The file is not encrypted.
+              </Typography>
+              <Box display="flex" gap={1} flexWrap="wrap" mb={1.5}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<BackupIcon />}
+                  onClick={handleBackup}
+                  disabled={backupBusy}
+                >
+                  Backup
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<RestoreIcon />}
+                  onClick={() => restoreInputRef.current?.click()}
+                  disabled={backupBusy}
+                >
+                  Restore
+                </Button>
+                <input
+                  ref={restoreInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={handleRestoreFileChosen}
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Last backup:{' '}
+                {lastBackupAt ? dayjs(lastBackupAt).format('DD MMM YYYY, h:mm A') : 'never'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
         <Grid size={12}>
           <Card>
             <CardContent>
@@ -422,6 +540,20 @@ export function SettingsPage() {
           </Card>
         </Grid>
       </Grid>
+
+      <ConfirmDialog
+        open={pendingRestore !== null}
+        title="Restore Backup"
+        message={
+          pendingRestore
+            ? `This backup was taken on ${dayjs(pendingRestore.createdAt).format('DD MMM YYYY, h:mm A')} and contains ${pendingRestore.tables.transactions?.length ?? 0} transactions and ${pendingRestore.tables.accounts?.length ?? 0} accounts. Restoring replaces ALL data currently in the app with the contents of this file. This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Replace my data"
+        onConfirm={handleRestoreConfirm}
+        onCancel={() => setPendingRestore(null)}
+        loading={backupBusy}
+      />
     </Box>
   );
 }
