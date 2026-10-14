@@ -222,8 +222,11 @@ export function TransactionsPage() {
     try {
       const rows =
         scope === 'page' ? transactions : await fetchAllTransactions(baseFilter).unwrap();
-      if (format === 'csv') exportToCSV(exportColumns, rows, 'transactions');
-      else exportToExcel('Transactions', exportColumns, rows, 'transactions');
+      const saved =
+        format === 'csv'
+          ? await exportToCSV(exportColumns, rows, 'transactions')
+          : await exportToExcel('Transactions', exportColumns, rows, 'transactions');
+      if (!saved) return;
       enqueueSnackbar(`Exported ${rows.length} transaction${rows.length !== 1 ? 's' : ''}`, {
         variant: 'success',
       });

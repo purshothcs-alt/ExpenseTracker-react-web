@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { saveBlob } from './saveFile';
 
 export interface ExportColumn<T> {
   header: string;
@@ -9,15 +10,29 @@ export interface ExportColumn<T> {
   width?: number;
 }
 
+// jsPDF's built-in fonts only cover Latin characters; anything else (the rupee sign,
+// the dirham sign) is printed as garbage, so currency symbols are spelled out.
+const PDF_TEXT_REPLACEMENTS: Array<[string, string]> = [
+  ['₹', 'Rs. '],
+  ['د.إ', 'AED '],
+];
+
+function pdfSafe(text: string): string {
+  return PDF_TEXT_REPLACEMENTS.reduce((t, [from, to]) => t.split(from).join(to), text).replace(
+    /\s{2,}/g,
+    ' ',
+  );
+}
+
 export function exportToPDF<T extends object>(
   title: string,
   columns: ExportColumn<T>[],
   data: T[],
   filename = 'report',
-): void {
+): Promise<boolean> {
   const doc = new jsPDF();
   doc.setFontSize(16);
-  doc.text(title, 14, 15);
+  doc.text(pdfSafe(title), 14, 15);
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
 
@@ -25,7 +40,7 @@ export function exportToPDF<T extends object>(
   const rows = data.map((row) =>
     columns.map((col) => {
       const val = row[col.key];
-      return col.format ? col.format(val, row) : String(val ?? '');
+      return pdfSafe(col.format ? col.format(val, row) : String(val ?? ''));
     }),
   );
 
@@ -38,16 +53,7 @@ export function exportToPDF<T extends object>(
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
-  // Use blob + anchor approach for reliable cross-browser download
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  return saveBlob(doc.output('blob'), `${filename}.pdf`);
 }
 
 export function exportToExcel<T extends object>(
@@ -55,7 +61,7 @@ export function exportToExcel<T extends object>(
   columns: ExportColumn<T>[],
   data: T[],
   filename = 'report',
-): void {
+): Promise<boolean> {
   const rows = data.map((row) => {
     const obj: Record<string, string> = {};
     columns.forEach((col) => {
@@ -71,15 +77,18 @@ export function exportToExcel<T extends object>(
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  return saveBlob(blob, `${filename}.xlsx`);
 }
 
 export function exportToCSV<T extends object>(
   columns: ExportColumn<T>[],
   data: T[],
   filename = 'report',
-): void {
+): Promise<boolean> {
   const headers = columns.map((c) => `"${c.header}"`).join(',');
   const rows = data.map((row) =>
     columns
@@ -91,13 +100,7 @@ export function exportToCSV<T extends object>(
       .join(','),
   );
   const csv = [headers, ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  return saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${filename}.csv`);
 }
 
 export function parseCSVFile(file: File): Promise<Record<string, string>[]> {

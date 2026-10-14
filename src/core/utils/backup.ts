@@ -1,6 +1,5 @@
-import { Capacitor } from '@capacitor/core';
 import db from '@core/database/db';
-import { FileSaver } from '@core/native/fileSaverPlugin';
+import { saveBlob } from './saveFile';
 
 const BACKUP_APP_ID = 'ExpenseTrackerPro';
 const BACKUP_FORMAT_VERSION = 1;
@@ -69,26 +68,7 @@ export async function restoreBackup(backup: BackupFile): Promise<void> {
   });
 }
 
-/**
- * Saves text as a file: a normal download in the browser, the system "save as" picker
- * in the Android app. Returns false if the user cancelled the picker.
- */
-export async function saveTextFile(
-  filename: string,
-  content: string,
-  mimeType = 'application/json',
-): Promise<boolean> {
-  if (Capacitor.isNativePlatform()) {
-    const { saved } = await FileSaver.saveTextFile({ filename, content, mimeType });
-    return saved;
-  }
-  const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  return true;
+/** Saves the backup as a JSON file. Returns false if the user cancelled the save picker. */
+export function saveBackupFile(backup: BackupFile, filename: string): Promise<boolean> {
+  return saveBlob(new Blob([JSON.stringify(backup)], { type: 'application/json' }), filename);
 }

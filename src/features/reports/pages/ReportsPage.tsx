@@ -51,6 +51,7 @@ import {
 import { PageHeader } from '@core/components/common/PageHeader';
 import { ExportButtons, type ExportFormat } from '@core/components/common/ExportButtons';
 import { BreakdownReport } from '../components/BreakdownReport';
+import { useTransactionExport } from '@core/hooks/useTransactionExport';
 import {
   useGetTransactionsQuery,
   useGetMonthlySummaryQuery,
@@ -108,6 +109,7 @@ export function ReportsPage() {
   const theme = useTheme();
   const { formatCurrency, formatDate } = useAppSettings();
   const { settings } = useAppSettings();
+  const exportTransactions = useTransactionExport();
 
   const [reportType, setReportType] = useState('monthly');
   const [startDate, setStartDate] = useState(dayjs().startOf('year').format('YYYY-MM-DD'));
@@ -132,7 +134,7 @@ export function ReportsPage() {
           endDate,
           categoryId: drillCategoryId,
           page: 1,
-          pageSize: 200,
+          pageSize: 10000,
           sortOrder: 'desc',
         }
       : { page: 1, pageSize: 0, sortOrder: 'desc' },
@@ -275,9 +277,9 @@ export function ReportsPage() {
     const { title, filename, columns, rows } = buildExport(
       format === 'pdf' ? formatCurrency : String,
     );
-    if (format === 'pdf') exportToPDF(title, columns, rows, filename);
-    else if (format === 'excel') exportToExcel('Report', columns, rows, filename);
-    else exportToCSV(columns, rows, filename);
+    if (format === 'pdf') return exportToPDF(title, columns, rows, filename);
+    if (format === 'excel') return exportToExcel('Report', columns, rows, filename);
+    return exportToCSV(columns, rows, filename);
   };
 
   return (
@@ -700,9 +702,20 @@ export function ReportsPage() {
                         variant="outlined"
                       />
                     </Box>
-                    <IconButton size="small" onClick={() => setDrillCategoryId(null)}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
+                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                      <ExportButtons
+                        formats={['pdf', 'excel', 'csv']}
+                        onExport={(format) =>
+                          exportTransactions(format, drillTransactions, {
+                            title: `Category: ${catMap.get(drillCategoryId)?.name ?? ''} (${formatDate(startDate)} to ${formatDate(endDate)})`,
+                            filename: `category-${catMap.get(drillCategoryId)?.name ?? drillCategoryId}-transactions`,
+                          })
+                        }
+                      />
+                      <IconButton size="small" onClick={() => setDrillCategoryId(null)}>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </Box>
                   <Divider sx={{ mb: 1.5 }} />
                   {drillTransactions.length === 0 ? (

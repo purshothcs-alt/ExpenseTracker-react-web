@@ -30,6 +30,8 @@ import { useTheme } from '@mui/material/styles';
 import { useGetTransactionsQuery, useGetAllTransactionTypesQuery } from '@app/api/transactionsApi';
 import { useAppSettings } from '@core/hooks/useAppSettings';
 import type { GroupedTotal, ReportGroupBy, TransactionFilter } from '@core/database/types';
+import { ExportButtons } from '@core/components/common/ExportButtons';
+import { useTransactionExport } from '@core/hooks/useTransactionExport';
 
 interface Props {
   groupBy: ReportGroupBy;
@@ -60,6 +62,7 @@ const drillFilter = (groupBy: ReportGroupBy, row: GroupedTotal): TransactionFilt
 export function BreakdownReport({ groupBy, label, rows, startDate, endDate }: Props) {
   const theme = useTheme();
   const { settings, formatCurrency, formatDate } = useAppSettings();
+  const exportTransactions = useTransactionExport();
   const [drillKey, setDrillKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export function BreakdownReport({ groupBy, label, rows, startDate, endDate }: Pr
           startDate,
           endDate,
           page: 1,
-          pageSize: 500,
+          pageSize: 10000,
           sortOrder: 'desc',
         }
       : { page: 1, pageSize: 1 },
@@ -268,9 +271,20 @@ export function BreakdownReport({ groupBy, label, rows, startDate, endDate }: Pr
                     variant="outlined"
                   />
                 </Box>
-                <IconButton size="small" onClick={() => setDrillKey(null)}>
-                  <CloseIcon fontSize="small" />
-                </IconButton>
+                <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                  <ExportButtons
+                    formats={['pdf', 'excel', 'csv']}
+                    onExport={(format) =>
+                      exportTransactions(format, drillTransactions, {
+                        title: `${label}: ${drillRow.name} (${formatDate(startDate)} to ${formatDate(endDate)})`,
+                        filename: `${groupBy}-${drillRow.name}-transactions`,
+                      })
+                    }
+                  />
+                  <IconButton size="small" onClick={() => setDrillKey(null)}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
               </Box>
               <Divider sx={{ mb: 1.5 }} />
               <TableContainer>

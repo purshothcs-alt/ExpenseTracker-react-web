@@ -35,7 +35,7 @@ import {
   createBackup,
   parseBackup,
   restoreBackup,
-  saveTextFile,
+  saveBackupFile,
   type BackupFile,
 } from '@core/utils/backup';
 
@@ -114,7 +114,7 @@ export function SettingsPage() {
     try {
       const backup = await createBackup();
       const filename = `myexpenses-backup-${dayjs().format('YYYY-MM-DD-HHmm')}.json`;
-      const saved = await saveTextFile(filename, JSON.stringify(backup));
+      const saved = await saveBackupFile(backup, filename);
       if (!saved) return;
       await db.settings.put({
         key: 'lastBackupAt',

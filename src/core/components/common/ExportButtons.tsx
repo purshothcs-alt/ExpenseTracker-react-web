@@ -12,6 +12,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useState, type ReactNode } from 'react';
+import { useSnackbar } from 'notistack';
 
 export type ExportFormat = 'pdf' | 'excel' | 'csv';
 export type ExportScope = 'page' | 'all';
@@ -24,7 +25,7 @@ const FORMATS: Record<ExportFormat, { label: string; icon: ReactNode }> = {
 
 interface Props {
   formats?: ExportFormat[];
-  onExport: (format: ExportFormat, scope: ExportScope) => void | Promise<void>;
+  onExport: (format: ExportFormat, scope: ExportScope) => unknown;
   /** Records on the visible page. Pass with totalCount on paginated screens. */
   pageCount?: number;
   /** Records matching the current filters across all pages. */
@@ -43,6 +44,7 @@ export function ExportButtons({
 }: Props) {
   const [pendingFormat, setPendingFormat] = useState<ExportFormat | null>(null);
   const [busy, setBusy] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const hasMorePages =
     pageCount !== undefined && totalCount !== undefined && totalCount > pageCount;
@@ -52,6 +54,8 @@ export function ExportButtons({
     setBusy(true);
     try {
       await onExport(format, scope);
+    } catch {
+      enqueueSnackbar('Export failed', { variant: 'error' });
     } finally {
       setBusy(false);
     }
