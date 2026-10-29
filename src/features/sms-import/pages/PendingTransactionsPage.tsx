@@ -12,6 +12,7 @@ import {
   IconButton,
   Tooltip,
   Divider,
+  Alert,
 } from '@mui/material';
 import SmsIcon from '@mui/icons-material/Sms';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -19,7 +20,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSnackbar } from 'notistack';
 import { Capacitor } from '@capacitor/core';
 import { PageHeader } from '@core/components/common/PageHeader';
@@ -27,6 +28,7 @@ import { EmptyState } from '@core/components/common/EmptyState';
 import { ConfirmDialog } from '@core/components/common/ConfirmDialog';
 import { useAppSettings } from '@core/hooks/useAppSettings';
 import { drainNativeSmsQueue } from '@core/sms/nativeQueue';
+import { SmsImport } from '@core/native/smsImportPlugin';
 import { useGetTransactionTypesQuery } from '@app/api/transactionsApi';
 import {
   useGetPendingSmsTransactionsQuery,
@@ -52,9 +54,32 @@ export function PendingTransactionsPage() {
   const [pasteText, setPasteText] = useState('');
   const [pasteSender, setPasteSender] = useState('');
   const [checkingNative, setCheckingNative] = useState(false);
+  const [smsPermissionGranted, setSmsPermissionGranted] = useState(true);
 
-  const { formatCurrency, formatDate } = useAppSettings();
+  const { settings, formatCurrency, formatDate } = useAppSettings();
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    SmsImport.checkPermissions()
+      .then((r) => setSmsPermissionGranted(r.sms === 'granted'))
+      .catch(() => setSmsPermissionGranted(true));
+  }, []);
+
+  const handleRequestSmsPermission = async () => {
+    try {
+      const { sms } = await SmsImport.requestPermissions();
+      setSmsPermissionGranted(sms === 'granted');
+      if (sms !== 'granted') {
+        enqueueSnackbar(
+          'SMS permission not granted — enable it in Android Settings > Apps > Permissions',
+          { variant: 'warning' },
+        );
+      }
+    } catch {
+      enqueueSnackbar('Failed to request SMS permission', { variant: 'error' });
+    }
+  };
 
   const { data: rows = [], isLoading } = useGetPendingSmsTransactionsQuery(tab);
   const { data: txTypes = [] } = useGetTransactionTypesQuery();
@@ -208,6 +233,27 @@ export function PendingTransactionsPage() {
           </Stack>
         }
       />
+
+      {Capacitor.isNativePlatform() && !smsPermissionGranted && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 3 }}
+          action={
+            <Button color="inherit" size="small" onClick={handleRequestSmsPermission}>
+              Grant
+            </Button>
+          }
+        >
+          SMS permission is off, so new bank/UPI messages aren't being detected. Android resets it
+          whenever the app is reinstalled.
+        </Alert>
+      )}
+
+      {Capacitor.isNativePlatform() && !settings.smsImportEnabled && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          SMS detection is turned off in Settings.
+        </Alert>
+      )}
 
       <Card sx={{ mb: 3 }}>
         <CardContent>

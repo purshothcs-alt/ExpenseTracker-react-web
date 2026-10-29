@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { drainNativeSmsQueue } from '@core/sms/nativeQueue';
+import { SmsImport } from '@core/native/smsImportPlugin';
+import { useAppSettings } from '@core/hooks/useAppSettings';
 import { useImportSmsTextMutation } from '@app/api/smsImportApi';
 
 const POLL_INTERVAL_MS = 15_000;
@@ -19,7 +21,26 @@ const POLL_INTERVAL_MS = 15_000;
  */
 export function useNativeSmsListener(): void {
   const [importSmsText] = useImportSmsTextMutation();
+  const { settings } = useAppSettings();
   const draining = useRef(false);
+
+  // RECEIVE_SMS is a runtime permission that Android resets on every fresh
+  // install, and without it SmsReceiver never fires. Ask on launch while the
+  // OS will still show the dialog; once the user has permanently denied it
+  // ('denied'), leave it to the Settings / Pending Transactions buttons.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || !settings.smsImportEnabled) return;
+
+    SmsImport.checkPermissions()
+      .then(({ sms }) => {
+        if (sms === 'prompt' || sms === 'prompt-with-rationale') {
+          return SmsImport.requestPermissions();
+        }
+      })
+      .catch(() => {
+        // Plugin unavailable — the Settings page surfaces permission state.
+      });
+  }, [settings.smsImportEnabled]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
