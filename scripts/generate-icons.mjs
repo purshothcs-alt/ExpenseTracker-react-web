@@ -1,5 +1,6 @@
 /**
- * Generates PWA icons (and favicon/apple-touch-icon) from a source photo.
+ * Generates PWA icons (and favicon/apple-touch-icon) plus Android launcher
+ * icons from a source photo.
  * Run: node scripts/generate-icons.mjs
  */
 import { mkdirSync } from 'fs';
@@ -16,9 +17,18 @@ mkdirSync(ICONS_OUT, { recursive: true });
 
 const SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
 
-async function run() {
-  const meta = await sharp(SOURCE).metadata();
-  // Tight crop around the face so the icon reads clearly at small sizes.
+// Android launcher icons, keyed by density: [legacy/round size, adaptive foreground size]
+const ANDROID_RES = join(__dir, '..', 'android', 'app', 'src', 'main', 'res');
+const ANDROID_DENSITIES = {
+  mdpi: [48, 108],
+  hdpi: [72, 162],
+  xhdpi: [96, 216],
+  xxhdpi: [144, 324],
+  xxxhdpi: [192, 432],
+};
+
+// Square crop centred on the face.
+function cropSquare(meta) {
   const squareSize = Math.round(Math.min(meta.width, meta.height) * 0.62);
 
   const left = Math.min(
@@ -30,8 +40,53 @@ async function run() {
     meta.height - squareSize,
   );
 
-  const square = sharp(SOURCE).extract({ left, top, width: squareSize, height: squareSize });
-  const squareBuffer = await square.toBuffer();
+  return sharp(SOURCE).extract({ left, top, width: squareSize, height: squareSize }).toBuffer();
+}
+
+function circleMask(size) {
+  const r = size / 2;
+  return Buffer.from(
+    `<svg width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r}"/></svg>`,
+  );
+}
+
+// Adaptive icon launchers only show the centre ~72dp of the 108dp foreground,
+// so place the PWA crop over that (with margin to hide its edge under the mask)
+// and fill the bleed with a blurred copy of it.
+async function adaptiveForeground(squareBuffer, size) {
+  const inner = Math.round((size * 84) / 108);
+  const offset = Math.round((size - inner) / 2);
+  const centre = await sharp(squareBuffer).resize(inner, inner).toBuffer();
+
+  return sharp(squareBuffer)
+    .resize(size, size)
+    .blur(size / 20)
+    .composite([{ input: centre, left: offset, top: offset }])
+    .png()
+    .toBuffer();
+}
+
+async function generateAndroid(squareBuffer) {
+  for (const [density, [size, fgSize]] of Object.entries(ANDROID_DENSITIES)) {
+    const dir = join(ANDROID_RES, `mipmap-${density}`);
+
+    await sharp(squareBuffer).resize(size, size).png().toFile(join(dir, 'ic_launcher.png'));
+    await sharp(squareBuffer)
+      .resize(size, size)
+      .composite([{ input: circleMask(size), blend: 'dest-in' }])
+      .png()
+      .toFile(join(dir, 'ic_launcher_round.png'));
+    await sharp(await adaptiveForeground(squareBuffer, fgSize)).toFile(
+      join(dir, 'ic_launcher_foreground.png'),
+    );
+    console.log(`✓ android mipmap-${density}`);
+  }
+}
+
+async function run() {
+  const meta = await sharp(SOURCE).metadata();
+  // Tight crop around the face so the icon reads clearly at small sizes.
+  const squareBuffer = await cropSquare(meta);
 
   for (const size of SIZES) {
     await sharp(squareBuffer)
@@ -47,7 +102,9 @@ async function run() {
   await sharp(squareBuffer).resize(32, 32).png().toFile(join(PUBLIC_OUT, 'favicon-32x32.png'));
   console.log('✓ favicon-32x32.png');
 
-  console.log('\nAll PWA icons generated from app-icon-source.jpeg');
+  await generateAndroid(squareBuffer);
+
+  console.log('\nAll PWA and Android icons generated from app-icon-source.jpeg');
 }
 
 run();
