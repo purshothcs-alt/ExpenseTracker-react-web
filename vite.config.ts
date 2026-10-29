@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
+      includeAssets: ['favicon-32x32.png', 'apple-touch-icon.png', 'icons/*.png'],
       manifest: {
         name: 'Expense Tracker Pro',
         short_name: 'ExpenseTracker',
